@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Biofloc Expert System V19</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#04101e;--panel:#091929;--card:#0e2236;--inp:#0a1f33;--hov:#122a42;
+  --acc:#00c9a7;--acc2:#3d8ef5;--warn:#f5a623;--dng:#ff3d57;--purp:#a78bfa;--gold:#fbbf24;
+  --t1:#d8eaff;--t2:#6a90b8;--t3:#3d6080;
+  --b1:#1a3550;--b2:#1e4060;
+  --font:'Segoe UI',system-ui,sans-serif;--mono:'Courier New',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px}
+body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden}
+.app{display:flex;flex-direction:column;height:100vh}
+
+/* topbar */
+.topbar{background:var(--panel);border-bottom:1px solid var(--b1);padding:0 1.5rem;display:flex;align-items:center;gap:1rem;height:50px;flex-shrink:0}
+.logo{font-size:15px;font-weight:700;color:var(--acc);letter-spacing:1px;white-space:nowrap}
+.logo span{color:var(--t2);font-weight:400;font-size:11px;margin-left:6px}
+.stats{display:flex;gap:1.5rem;margin-left:auto}
+.stat{font-size:11px;color:var(--t2)}
+.stat strong{color:var(--t1);font-size:13px;display:block}
+
+/* tabs */
+.tabnav{background:var(--panel);border-bottom:1px solid var(--b1);display:flex;overflow-x:auto;flex-shrink:0}
+.tabnav::-webkit-scrollbar{height:0}
+.tb{padding:0 1rem;height:40px;font-size:11px;font-weight:500;color:var(--t2);background:transparent;border:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s;display:flex;align-items:center;gap:4px}
+.tb:hover{color:var(--t1);background:var(--hov)}
+.tb.active{color:var(--acc);border-bottom-color:var(--acc)}
+
+/* main */
+.main{flex:1;overflow-y:auto;padding:1rem 1.25rem}
+.pane{display:none}.pane.active{display:block}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--b1);border-radius:8px;padding:.9rem 1.1rem;margin-bottom:.9rem}
+.ctitle{font-size:10px;font-weight:700;color:var(--t2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.6rem;display:flex;align-items:center;gap:6px}
+.ctitle .dot{width:5px;height:5px;border-radius:50%;background:var(--acc)}
+
+/* metrics */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:.9rem}
+.met{background:var(--panel);border:1px solid var(--b1);border-radius:6px;padding:.6rem .9rem}
+.mlbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.mval{font-size:18px;font-weight:700;color:var(--t1);font-family:var(--mono)}
+.munit{font-size:10px;color:var(--t2);margin-left:2px}
+.met.ok .mval{color:var(--acc)}.met.warn .mval{color:var(--warn)}.met.dng .mval{color:var(--dng)}
+
+/* table */
+.tw{overflow-x:auto;border-radius:6px;border:1px solid var(--b1)}
+table{width:100%;border-collapse:collapse;font-size:11px}
+thead th{background:#091f35;color:var(--t2);font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.7px;padding:7px 8px;border-bottom:1px solid var(--b1);white-space:nowrap;text-align:center}
+tbody tr{border-bottom:1px solid var(--b1);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--hov)}
+tbody td{padding:5px 7px;text-align:center;vertical-align:middle}
+
+/* inputs */
+input.ci{background:rgba(0,201,167,.08);border:1px solid rgba(0,201,167,.22);border-radius:4px;color:var(--acc);font-family:var(--mono);font-size:11px;width:62px;padding:3px 4px;text-align:center;outline:none;transition:border .15s}
+input.ci:focus{border-color:var(--acc);background:rgba(0,201,167,.15)}
+input.ci.wi{border-color:var(--warn)!important;color:var(--warn)!important}
+input.ci.di{border-color:var(--dng)!important;color:var(--dng)!important}
+.cf{color:var(--t2);font-family:var(--mono);font-size:11px}
+.cn{color:var(--t1);font-weight:600;font-size:10px;text-align:left;white-space:nowrap}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;font-size:9px;font-weight:700}
+.b-ok{background:rgba(0,201,167,.12);color:var(--acc)}
+.b-warn{background:rgba(245,166,35,.12);color:var(--warn)}
+.b-dng{background:rgba(255,61,87,.15);color:var(--dng)}
+.b-purp{background:rgba(167,139,250,.15);color:var(--purp)}
+.b-gold{background:rgba(251,191,36,.15);color:var(--gold)}
+.fcr-ok{background:rgba(0,201,167,.15);color:var(--acc);padding:2px 7px;border-radius:9px;font-weight:700}
+.fcr-bad{background:rgba(255,61,87,.2);color:var(--dng);padding:2px 7px;border-radius:9px;font-weight:700}
+
+/* select / date */
+select.si{background:var(--inp);border:1px solid rgba(0,201,167,.35);border-radius:6px;color:var(--acc);font-size:12px;font-weight:600;padding:5px 10px;outline:none;cursor:pointer}
+select.si:focus{border-color:var(--acc)}
+input[type=date].di2{background:var(--inp);border:1px solid rgba(0,201,167,.35);border-radius:6px;color:var(--acc);font-size:12px;font-weight:600;padding:5px 10px;outline:none;cursor:pointer;font-family:var(--font)}
+input[type=date].di2:focus{border-color:var(--acc)}
+input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1) saturate(3) hue-rotate(130deg);cursor:pointer}
+
+/* misc */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+@media(max-width:700px){.two{grid-template-columns:1fr}}
+.cw{position:relative;width:100%;height:250px}
+.gi{display:flex;align-items:center;gap:7px;background:var(--panel);border:1px solid var(--b1);border-radius:6px;padding:.35rem .65rem}
+.gi label{font-size:10px;color:var(--t2);white-space:nowrap}
+.gi input{background:var(--inp);border:1px solid var(--b2);border-radius:4px;color:var(--acc);font-size:12px;font-weight:700;font-family:var(--mono);width:70px;padding:2px 5px;text-align:center;outline:none}
+.gi input:focus{border-color:var(--acc)}
+.sbtn{background:var(--acc);color:#04101e;border:none;border-radius:6px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;transition:opacity .15s}
+.sbtn:hover{opacity:.85}
+.abtn{background:var(--acc2);color:#fff;border:none;border-radius:6px;padding:6px 13px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.abtn:hover{opacity:.85}
+.dbtn{background:none;border:1px solid var(--dng);border-radius:4px;color:var(--dng);cursor:pointer;font-size:10px;padding:2px 6px}
+.dbtn:hover{background:rgba(255,61,87,.12)}
+.sbar{height:7px;border-radius:4px;background:var(--b1);overflow:hidden;margin-top:3px}
+.sbar-fill{height:100%;border-radius:4px;transition:width .4s}
+.cfield{display:flex;align-items:center;padding:.5rem .9rem;border-bottom:1px solid var(--b1)}
+.cfield:last-child{border-bottom:none}
+.cf-cat{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;width:100px;flex-shrink:0}
+.cf-lbl{font-size:11px;color:var(--t2);flex:1}
+.cf-val{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--t1);min-width:80px;text-align:right}
+.err-block{background:rgba(255,61,87,.1);border:1px solid var(--dng);border-radius:8px;padding:1.5rem;text-align:center;color:var(--dng);font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:.9rem}
+.tab-pill{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.75rem}
+.pill{padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--b2);background:var(--panel);color:var(--t2);transition:all .15s}
+.pill.active{background:var(--acc);color:#04101e;border-color:var(--acc)}
+
+/* feed type cards */
+.feed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.75rem}
+.feed-card{background:var(--card);border:1px solid var(--b1);border-radius:8px;padding:.8rem 1rem}
+.feed-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;padding-bottom:.5rem;border-bottom:1px solid var(--b1)}
+.feed-name{font-size:12px;font-weight:700;color:var(--t1)}
+.feed-stage{font-size:9px;color:var(--t3)}
+.cump-val{font-size:20px;font-weight:800;font-family:var(--mono);color:var(--gold);margin:.4rem 0}
+.batch-row{display:flex;gap:5px;align-items:center;margin-bottom:4px}
+.batch-row input{background:var(--inp);border:1px solid var(--b2);border-radius:4px;color:var(--acc);font-size:11px;padding:3px 5px;outline:none;font-family:var(--mono)}
+.batch-row input:focus{border-color:var(--acc)}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:pulse 2s infinite;display:inline-block;margin-right:5px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+@media print{.topbar,.tabnav,.no-print{display:none!important}body{background:#fff;color:#000}}
+
+/* ── MODAL DOCUMENTATION ── */
+#doc-modal{position:fixed;inset:0;z-index:8888;display:none;align-items:flex-start;justify-content:center;padding:1.5rem;background:rgba(4,16,30,.85);overflow-y:auto}
+#doc-modal.open{display:flex}
+.doc-box{background:var(--card);border:1px solid var(--b2);border-radius:12px;width:100%;max-width:860px;position:relative;animation:fadeIn .3s ease}
+.doc-topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--b1);position:sticky;top:0;background:var(--card);border-radius:12px 12px 0 0;z-index:10}
+.doc-topbar h2{font-size:15px;font-weight:800;color:var(--acc);letter-spacing:.5px}
+.doc-close{background:rgba(255,61,87,.12);border:1px solid var(--dng);border-radius:6px;color:var(--dng);font-size:13px;font-weight:700;padding:4px 12px;cursor:pointer;transition:background .15s}
+.doc-close:hover{background:rgba(255,61,87,.25)}
+.doc-body{padding:1.5rem}
+.doc-section{margin-bottom:2rem}
+.doc-sec-title{font-size:13px;font-weight:800;color:var(--t1);letter-spacing:.5px;padding:.5rem .9rem;background:rgba(0,201,167,.07);border-left:3px solid var(--acc);border-radius:0 6px 6px 0;margin-bottom:1rem}
+.doc-field{display:grid;grid-template-columns:180px 1fr;gap:0;border:1px solid var(--b1);border-radius:6px;margin-bottom:.6rem;overflow:hidden}
+.doc-field-name{background:var(--panel);padding:.55rem .8rem;font-size:11px;font-weight:700;color:var(--acc);border-right:1px solid var(--b1);display:flex;align-items:flex-start;line-height:1.5}
+.doc-field-body{padding:.55rem .9rem}
+.doc-field-desc{font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:.3rem}
+.doc-field-rule{font-size:10px;color:var(--t3);background:rgba(0,0,0,.2);border-radius:4px;padding:.25rem .5rem;display:inline-block;margin-top:.1rem}
+.doc-field-rule.ok{color:var(--acc);background:rgba(0,201,167,.08)}
+.doc-field-rule.warn{color:var(--warn);background:rgba(245,166,35,.08)}
+.doc-field-rule.dng{color:var(--dng);background:rgba(255,61,87,.08)}
+.doc-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:1.5rem}
+.doc-tab-pill{padding:5px 14px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--b2);background:var(--panel);color:var(--t2);transition:all .15s}
+.doc-tab-pill.active,.doc-tab-pill:hover{background:var(--acc);color:#04101e;border-color:var(--acc)}
+.doc-sec{display:none}.doc-sec.active{display:block}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem}
+#login-screen.hidden{display:none}
+.ls-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.ls-circle{position:absolute;border-radius:50%;opacity:.07}
+.ls-c1{width:600px;height:600px;background:var(--acc);top:-180px;right:-150px}
+.ls-c2{width:380px;height:380px;background:var(--acc2);bottom:-80px;left:-80px}
+.ls-c3{width:220px;height:220px;background:var(--purp);top:38%;left:18%}
+.ls-card{background:var(--card);border:1px solid var(--b2);border-radius:16px;padding:2.5rem 2.5rem 2rem;width:100%;max-width:400px;position:relative;z-index:1}
+.ls-fish{font-size:46px;text-align:center;margin-bottom:.4rem;line-height:1}
+.ls-title{font-size:21px;font-weight:800;color:var(--acc);text-align:center;letter-spacing:1px;margin-bottom:.25rem}
+.ls-subtitle{font-size:10px;color:var(--t2);text-align:center;margin-bottom:.4rem;letter-spacing:.5px;text-transform:uppercase}
+.ls-farm{font-size:13px;font-weight:700;color:var(--t1);text-align:center;margin-bottom:1.6rem;padding:.4rem 1rem;background:rgba(0,201,167,.08);border-radius:20px;border:1px solid rgba(0,201,167,.18);display:inline-block;width:100%}
+.ls-clock{font-size:28px;font-weight:800;font-family:var(--mono);color:var(--acc);text-align:center;letter-spacing:3px}
+.ls-date-str{font-size:11px;color:var(--t2);text-align:center;margin-bottom:1.6rem;margin-top:.2rem}
+.ls-sep{height:1px;background:var(--b1);margin-bottom:1.4rem}
+.ls-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.ls-inp{width:100%;background:var(--inp);border:1px solid var(--b2);border-radius:8px;color:var(--t1);font-size:13px;padding:.6rem .9rem;outline:none;margin-bottom:.9rem;font-family:var(--font);transition:border .15s}
+.ls-inp:focus{border-color:var(--acc)}
+.ls-btn{width:100%;background:var(--acc);color:#04101e;border:none;border-radius:8px;padding:.75rem;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.5px;transition:opacity .15s}
+.ls-btn:hover{opacity:.87}
+.ls-err{background:rgba(255,61,87,.1);border:1px solid var(--dng);border-radius:6px;color:var(--dng);font-size:11px;padding:.45rem .7rem;text-align:center;margin-top:.6rem;display:none}
+.ls-err.show{display:block}
+.ls-footer{position:relative;z-index:1;margin-top:1.2rem;font-size:10px;color:var(--t3);text-align:center}
+@keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.ls-card{animation:fadeIn .45s ease}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     PAGE D'ACCÈS
+════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="ls-bg">
+    <div class="ls-circle ls-c1"></div>
+    <div class="ls-circle ls-c2"></div>
+    <div class="ls-circle ls-c3"></div>
+  </div>
+  <div class="ls-card">
+    <div class="ls-fish">🐟</div>
+    <div class="ls-title">BIOFLOC</div>
+    <div class="ls-subtitle">Expert System V19</div>
+    <div class="ls-farm" id="ls-farm-name">FERME AQUACOLE</div>
+    <div class="ls-clock" id="ls-clock">--:--:--</div>
+    <div class="ls-date-str" id="ls-date-str">—</div>
+    <div class="ls-sep"></div>
+    <div class="ls-lbl">Identifiant</div>
+    <input id="ls-user" class="ls-inp" type="text" placeholder="ex: admin" autocomplete="username" onkeydown="if(event.key==='Enter')G('ls-pass').focus()">
+    <div class="ls-lbl">Mot de passe</div>
+    <input id="ls-pass" class="ls-inp" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="ls-btn" onclick="doLogin()">ACCÉDER AU SYSTÈME →</button>
+    <div class="ls-err" id="ls-err">❌ Identifiant ou mot de passe incorrect</div>
+  </div>
+  <div class="ls-footer">Système protégé — accès réservé au personnel autorisé</div>
+</div>
+<div class="app">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">🐟 BIOFLOC <span>Expert System V19</span></div>
+  <div class="stats">
+    <div class="stat"><span>Bassins actifs</span><strong id="s-actifs">—</strong></div>
+    <div class="stat"><span>Biomasse totale</span><strong id="s-bio">—</strong></div>
+    <div class="stat"><span>Aliment/jour</span><strong id="s-alim">—</strong></div>
+    <div class="stat"><span>Stock probio</span><strong id="s-stock">—</strong></div>
+    <div class="stat"><span>Récoltés</span><strong id="s-recolte" style="color:var(--purp)">—</strong></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabnav">
+  <button class="tb active" onclick="sw('t0')">📋 Mode d'emploi</button>
+  <button class="tb" onclick="sw('t1')">⚙️ Config Bassins</button>
+  <button class="tb" onclick="sw('t2')">🌾 Aliments</button>
+  <button class="tb" onclick="sw('t3')">📈 Suivi Croissance</button>
+  <button class="tb" onclick="sw('t4')">🧴 Logistique</button>
+  <button class="tb" onclick="sw('t5')">💰 Comptabilité</button>
+  <button class="tb" onclick="sw('t6')">🔍 Consultation</button>
+  <button class="tb" onclick="sw('t7')">🏆 Récoltes</button>
+  <button class="tb" onclick="sw('t8')">🖨️ Fiche Collecte</button>
+</div>
+
+<div class="main">
+
+<!-- ═══ T0 MODE D'EMPLOI ═══ -->
+<div id="t0" class="pane active">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem">
+    <button onclick="openDoc()" style="background:var(--acc2);color:#fff;border:none;border-radius:8px;padding:.55rem 1.2rem;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;letter-spacing:.3px">
+      📖 Guide complet — description de chaque champ
+    </button>
+  </div>
+  <div class="two">
+    <div>
+      <div class="card">
+        <div class="ctitle"><span class="dot"></span>Présentation du système</div>
+        <p style="font-size:11px;color:var(--t2);line-height:1.9;margin-bottom:.6rem">
+          Ce système est un outil de <strong style="color:var(--t1)">pilotage complet</strong> pour l'exploitation aquacole Biofloc. Il centralise en un seul fichier la gestion biologique (qualité d'eau, croissance), logistique (probiotiques), alimentaire (4 types de granulés) et financière (comptabilité en Franc CFA) de l'ensemble des bassins.
+        </p>
+        <p style="font-size:11px;color:var(--t2);line-height:1.9;margin-bottom:.6rem">
+          Chaque bassin dispose de ses <strong style="color:var(--acc)">mesures individuelles</strong> : température, pH, oxygène dissous (DO) et ammoniaque total (NH₃). Aucune mesure n'est globalisée — chaque bassin est un lot indépendant.
+        </p>
+        <p style="font-size:11px;color:var(--t2);line-height:1.9">
+          La croissance cible est de <strong style="color:var(--acc)">+2.9 g/jour</strong>. Le fût de probiotiques est de <strong style="color:var(--acc2)">100 litres</strong>. Le prix de l'aliment est calculé automatiquement via le <strong style="color:var(--gold)">CUMP</strong> (Coût Unitaire Moyen Pondéré) selon vos lots d'achat.
+        </p>
+      </div>
+      <div class="card">
+        <div class="ctitle"><span class="dot"></span>Procédures journalières et périodiques</div>
+        <div style="display:flex;gap:10px;padding:.55rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,201,167,.15);color:var(--acc);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.8"><strong style="color:var(--t1)">Chaque matin — avant le tour des bassins</strong><br>Rendez-vous dans l'onglet <em>🖨️ Fiche Collecte</em> et imprimez le tableau. Cette fiche vous accompagne sur le terrain pour noter à la main les mesures de chaque bassin.</div>
+        </div>
+        <div style="display:flex;gap:10px;padding:.55rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,201,167,.15);color:var(--acc);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.8"><strong style="color:var(--t1)">Après le tour — saisie dans Config Bassins</strong><br>Reportez pour chaque bassin : la <strong style="color:var(--t1)">température</strong>, le <strong style="color:var(--t1)">pH</strong>, l'<strong style="color:var(--t1)">oxygène dissous (DO)</strong>, l'<strong style="color:var(--t1)">ammoniaque (NH₃)</strong> et surtout la <strong style="color:var(--acc)">quantité d'aliment réellement servie (kg)</strong>. Ces données alimentent tous les calculs.</div>
+        </div>
+        <div style="display:flex;gap:10px;padding:.55rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,201,167,.15);color:var(--acc);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.8"><strong style="color:var(--t1)">Vérifier la logistique probiotiques</strong><br>Consultez l'onglet <em>🧴 Logistique</em>. Si la jauge de stock devient <strong style="color:var(--dng)">rouge</strong> (stock &lt; 15 L), préparez immédiatement un nouveau batch de 100 L. Mettez à jour le stock corrigé dans le champ prévu dans Config Bassins.</div>
+        </div>
+        <div style="display:flex;gap:10px;padding:.55rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:24px;height:24px;border-radius:50%;background:rgba(0,201,167,.15);color:var(--acc);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">4</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.8"><strong style="color:var(--t1)">Tous les 15 jours — pesée de contrôle</strong><br>Prélevez un échantillon représentatif de chaque bassin. Mettez à jour le <strong style="color:var(--t1)">Poids Moyen</strong> dans Config Bassins. Ajoutez aussi la mesure dans l'onglet <em>📈 Suivi Croissance</em> pour suivre la courbe et calculer le GMQ et le FCR.</div>
+        </div>
+        <div style="display:flex;gap:10px;padding:.55rem 0">
+          <div style="width:24px;height:24px;border-radius:50%;background:rgba(167,139,250,.15);color:var(--purp);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">5</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.8"><strong style="color:var(--t1)">Lors d'une récolte</strong><br>Passez le statut du bassin à <strong style="color:var(--purp)">"Récolté"</strong> dans Config Bassins. Toutes ses données (biomasse, FCR, marge, durée d'élevage) sont automatiquement synthétisées dans l'onglet <em>🏆 Récoltes</em>.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="ctitle"><span class="dot"></span>Légende des couleurs et codes visuels</div>
+        <p style="font-size:11px;color:var(--t2);line-height:1.8;margin-bottom:.6rem">L'application utilise un code couleur strict pour distinguer les cellules modifiables des calculs automatiques, et pour signaler les alertes.</p>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:16px;height:16px;border-radius:3px;background:rgba(0,201,167,.2);border:1px solid var(--acc);flex-shrink:0;margin-top:2px"></div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--acc)">Vert clair — Saisie autorisée.</strong> Ce sont les seules cellules que vous devez remplir : mesures terrain, quantités d'aliment, mortalités, lots d'achat, paramètres de coût.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:16px;height:16px;border-radius:3px;background:var(--panel);border:1px solid var(--b2);flex-shrink:0;margin-top:2px"></div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--t2)">Gris foncé — Valeur calculée.</strong> Ces cellules contiennent des formules automatiques (biomasse, ration, aliment théorique, FCR, marge...). Ne les modifiez pas directement.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:16px;height:16px;border-radius:3px;background:rgba(245,166,35,.15);border:1px solid var(--warn);flex-shrink:0;margin-top:2px"></div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--warn)">Orange — Alerte modérée.</strong> Valeur hors norme nécessitant votre attention : température &lt; 24°C (ration réduite), pH hors plage 6.5–8.2, GMQ faible, stock probio en baisse.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="width:16px;height:16px;border-radius:3px;background:rgba(255,61,87,.15);border:1px solid var(--dng);flex-shrink:0;margin-top:2px"></div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--dng)">Rouge — Alerte critique.</strong> Action immédiate requise : NH₃ &gt; 0.5 mg/L, DO &lt; 4 mg/L, FCR &gt; 1.5, stock probio &lt; 15 L. Ne laissez pas ces alertes sans réponse.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0">
+          <div style="width:16px;height:16px;border-radius:3px;background:rgba(251,191,36,.15);border:1px solid var(--gold);flex-shrink:0;margin-top:2px"></div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--gold)">Or — CUMP aliment.</strong> Coût Unitaire Moyen Pondéré, calculé automatiquement depuis vos lots d'achat. Utilisé dans toute la comptabilité.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ctitle"><span class="dot"></span>Les 4 types d'aliment et leurs stades</div>
+        <p style="font-size:11px;color:var(--t2);line-height:1.8;margin-bottom:.65rem">
+          L'alimentation est différenciée selon le <strong style="color:var(--t1)">stade de croissance</strong> du lot. Pour chaque type, vous renseignez vos lots d'achat dans l'onglet <em>🌾 Aliments</em>. Le type est <strong style="color:var(--gold)">sélectionnable manuellement</strong> dans Config Bassins pour chaque bassin.
+        </p>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="min-width:82px;font-weight:700;color:#c084fc;font-size:11px">Granulé 1</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--t1)">Stade larve / post-larve — inférieur à 5 g.</strong> Granulé de très petite taille destiné aux toutes premières semaines d'élevage, dès l'ensemencement du bassin.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="min-width:82px;font-weight:700;color:#34d399;font-size:11px">Granulé 2</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--t1)">Stade juvénile — 5 à 20 g.</strong> Granulé de petite taille adapté aux alevins en phase d'amorçage et de début de croissance active.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="min-width:82px;font-weight:700;color:#60a5fa;font-size:11px">Granulé 3</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--t1)">Stade grossissement — 20 à 150 g.</strong> Principal aliment de la phase de production. Taux de conversion optimisé pour le Biofloc.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0;border-bottom:1px solid var(--b1)">
+          <div style="min-width:82px;font-weight:700;color:#f59e0b;font-size:11px">Granulé 4</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--t1)">Stade pré-finition — 200 à 400 g.</strong> Granulé plus volumineux pour des poissons en pleine prise de masse. Ration calculée à 2.5% de la biomasse.</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:.5rem 0">
+          <div style="min-width:82px;font-weight:700;color:#f87171;font-size:11px">Granulé 6</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.7"><strong style="color:var(--t1)">Stade finition — 400 à 600 g.</strong> Granulé de grande taille pour la phase finale avant récolte. Ration ajustée pour optimiser le coût de production.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ T1 CONFIG BASSINS ═══ -->
+<div id="t1" class="pane">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.7rem">
+    <div class="gi">
+      <label>🧴 Stock Probio fût (ml)</label>
+      <input type="number" id="g-probio" value="100000" step="1000" oninput="upAll()">
+      <span style="font-size:9px;color:var(--t3)">/ 100 000 ml</span>
+    </div>
+    <button class="abtn" onclick="addBassin()">➕ Ajouter bassin</button>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th>Bassin</th><th>Statut</th><th>Vol (m³)</th><th>Nb Init</th><th>Mortalité</th><th>Nb Actuel</th>
+        <th>Poids Moy (g)</th><th>Type Alim</th><th>Biomasse (kg)</th><th>Ration (%)</th>
+        <th>Alim Théo (kg)</th><th>Alim Réel (kg)</th>
+        <th style="color:#a8d8ff">Temp (°C)</th><th style="color:#a8d8ff">pH</th>
+        <th style="color:#a8d8ff">DO (mg/L)</th><th style="color:#a8d8ff">NH₃ (mg/L)</th><th></th>
+      </tr></thead>
+      <tbody id="b-tbody"></tbody>
+    </table>
+  </div>
+  <div class="mgrid" style="margin-top:.8rem" id="b-metrics"></div>
+</div>
+
+<!-- ═══ T2 ALIMENTS ═══ -->
+<div id="t2" class="pane">
+  <div class="card" style="margin-bottom:.9rem">
+    <div class="ctitle"><span class="dot"></span>Gestion des 4 types d'aliment — CUMP automatique</div>
+    <p style="font-size:11px;color:var(--t2);margin-bottom:.75rem">Saisissez vos lots d'achat (quantité + prix unitaire) pour chaque type. Le CUMP (Coût Unitaire Moyen Pondéré) est calculé automatiquement et utilisé dans la comptabilité.</p>
+    <div class="feed-grid" id="feed-grid"></div>
+  </div>
+  <div class="card">
+    <div class="ctitle"><span class="dot"></span>Résumé stock aliments</div>
+    <div class="mgrid" id="feed-metrics"></div>
+  </div>
+</div>
+
+<!-- ═══ T3 SUIVI CROISSANCE ═══ -->
+<div id="t3" class="pane">
+  <div class="two">
+    <div>
+      <div class="card">
+        <div class="ctitle"><span class="dot"></span>Ajouter une pesée</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.6rem">
+          <div><div style="font-size:9px;color:var(--t3);margin-bottom:3px">DATE</div><input type="date" id="sc-date" class="di2" style="width:100%"></div>
+          <div><div style="font-size:9px;color:var(--t3);margin-bottom:3px">BASSIN</div><select id="sc-bassin" class="si" style="width:100%;font-size:11px"><option value="">Sélectionner...</option></select></div>
+          <div><div style="font-size:9px;color:var(--t3);margin-bottom:3px">POIDS MESURÉ (g)</div><input type="number" id="sc-poids" class="ci" style="width:100%" placeholder="ex: 12.5" step="0.1"></div>
+          <div><div style="font-size:9px;color:var(--t3);margin-bottom:3px">MORTALITÉ</div><input type="number" id="sc-mort" class="ci" style="width:100%" placeholder="0" min="0"></div>
+        </div>
+        <button class="sbtn" style="width:100%" onclick="addSuivi()">+ Ajouter pesée</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--t3)">Filtre :</span>
+        <select id="sc-filter" class="si" style="font-size:11px" onchange="renderSuivi()"><option value="">Tous</option></select>
+      </div>
+      <div class="tw" style="max-height:340px;overflow-y:auto">
+        <table><thead><tr><th>Date</th><th>Bassin</th><th>Poids (g)</th><th>Cible (g)</th><th>GMQ</th><th>FCR</th><th></th></tr></thead>
+        <tbody id="sc-tbody"></tbody></table>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.6rem">
+          <div class="ctitle" style="margin-bottom:0"><span class="dot"></span><span class="ldot"></span>Courbe de croissance</div>
+          <select id="chart-b" class="si" style="font-size:11px;margin-left:auto" onchange="renderChart()"><option value="">Tous</option></select>
+        </div>
+        <div class="cw"><canvas id="gc"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ T4 LOGISTIQUE ═══ -->
+<div id="t4" class="pane">
+  <div class="two">
+    <div>
+      <div class="card">
+        <div class="ctitle"><span class="dot"></span>Paramètres fût (100 L)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="gi" style="flex-direction:column;align-items:flex-start;gap:3px"><label>Stock actuel (ml)</label><input type="number" id="p-stock" value="100000" class="ci" style="width:100%" oninput="upLog()"></div>
+          <div class="gi" style="flex-direction:column;align-items:flex-start;gap:3px"><label>Seuil alerte (ml)</label><input type="number" id="p-seuil" value="15000" class="ci" style="width:100%" oninput="upLog()"></div>
+          <div class="gi" style="flex-direction:column;align-items:flex-start;gap:3px"><label>Dose FOOD (ml/kg)</label><input type="number" id="p-food" value="30" class="ci" style="width:100%" oninput="upLog()"></div>
+          <div class="gi" style="flex-direction:column;align-items:flex-start;gap:3px"><label>Dose WATER auto</label><div id="dw-disp" style="font-size:14px;font-weight:700;font-family:var(--mono);color:var(--acc);padding:.2rem 0"></div></div>
+        </div>
+      </div>
+      <div class="card"><div class="ctitle"><span class="dot"></span>pH moyen bassins</div><div id="ph-intel"></div></div>
+      <div class="card"><div class="ctitle"><span class="dot"></span>Stock probiotiques</div><div id="stock-disp"></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="ctitle"><span class="dot"></span>Bilan hebdomadaire — tous bassins</div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th>Jour</th>
+            <th style="color:#c084fc">G1 (kg)</th>
+            <th style="color:#34d399">G2 (kg)</th>
+            <th style="color:#60a5fa">G3 (kg)</th>
+            <th style="color:#f59e0b">G4 (kg)</th>
+            <th style="color:#f87171">G6 (kg)</th>
+            <th>Total Alim (kg)</th>
+            <th>FOOD (ml)</th>
+            <th>Vol total (m³)</th>
+            <th>WATER (ml)</th>
+            <th>Total/j (ml)</th>
+            <th>Stock restant (ml)</th>
+          </tr></thead>
+          <tbody id="log-tbody"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ T5 COMPTABILITÉ ═══ -->
+<div id="t5" class="pane">
+  <div class="card">
+    <div class="ctitle"><span class="dot"></span>Paramètres — XOF Franc CFA</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.6rem">
+      <div class="gi"><label>Probio (XOF/L)</label><input type="number" id="c-probio" value="5500" oninput="upCompta()" class="ci" style="width:80px"></div>
+      <div class="gi"><label>Élec (XOF/kWh)</label><input type="number" id="c-elec" value="120" oninput="upCompta()" class="ci" style="width:75px"></div>
+      <div class="gi"><label>Watts/bassin</label><input type="number" id="c-watts" value="150" oninput="upCompta()" class="ci" style="width:65px"></div>
+      <div class="gi"><label>Heures/jour</label><input type="number" id="c-heures" value="24" oninput="upCompta()" class="ci" style="width:55px"></div>
+      <div class="gi"><label>Prix vente (XOF/kg)</label><input type="number" id="c-vente" value="4000" oninput="upCompta()" class="ci" style="width:80px"></div>
+    </div>
+    <p style="font-size:10px;color:var(--t3);margin-top:.5rem">Prix aliment = CUMP automatique selon type attribué à chaque bassin (onglet 🌾 Aliments)</p>
+  </div>
+  <div class="mgrid" id="compta-metrics"></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Bassin</th><th>Statut</th><th>Type Alim</th><th>CUMP Alim (XOF/kg)</th><th>Biomasse (kg)</th><th>Coût Alim (XOF)</th><th>Coût Probio (XOF)</th><th>Coût Élec (XOF)</th><th>Coût Total (XOF)</th><th>Revenu (XOF)</th><th>Marge (XOF)</th><th>Marge (%)</th></tr></thead>
+      <tbody id="compta-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══ T6 CONSULTATION ═══ -->
+<div id="t6" class="pane">
+  <div class="card" style="display:flex;align-items:flex-end;gap:1.2rem;flex-wrap:wrap">
+    <div><div style="font-size:9px;color:var(--t3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Bassin</div>
+      <select id="cons-b" class="si" onchange="upCons()"><option value="">-- Choisir --</option></select></div>
+    <div><div style="font-size:9px;color:var(--t3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Date</div>
+      <input type="date" id="cons-d" class="di2" onchange="upCons()"></div>
+    <div id="cons-alert" style="margin-left:auto"></div>
+  </div>
+  <div id="cons-err" style="display:none" class="err-block">❌ ERROR — Aucune donnée pour ce bassin à cette date.<br><span style="font-size:10px;font-weight:400;margin-top:4px;display:block;color:var(--t2)">Ajoutez une pesée dans Suivi Croissance pour cette combinaison bassin/date.</span></div>
+  <div id="cons-body" class="two">
+    <div class="card"><div class="ctitle"><span class="dot"></span>Données biologiques</div><div id="cons-bio"></div></div>
+    <div class="card"><div class="ctitle"><span class="dot"></span>Performance économique</div><div id="cons-fin"></div></div>
+  </div>
+</div>
+
+<!-- ═══ T7 RÉCOLTES ═══ -->
+<div id="t7" class="pane">
+  <div class="mgrid" id="rec-metrics"></div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th>Bassin</th><th>Date récolte</th><th>Vol (m³)</th><th>Durée élevage (j)</th>
+        <th>Nb Initial</th><th>Mortalité totale</th><th>Survie (%)</th>
+        <th>Poids Final (g)</th><th>Biomasse récoltée (kg)</th>
+        <th>FCR estimé</th><th>GMQ moy (g/j)</th>
+        <th>Revenu (XOF)</th><th>Coût total (XOF)</th><th>Marge (XOF)</th>
+      </tr></thead>
+      <tbody id="rec-tbody"></tbody>
+    </table>
+  </div>
+  <p style="font-size:10px;color:var(--t3);margin-top:.5rem">Les bassins apparaissent ici dès que leur statut est "Récolté" dans Config Bassins.</p>
+</div>
+
+<!-- ═══ T8 FICHE COLLECTE ═══ -->
+<div id="t8" class="pane">
+  <div style="display:flex;justify-content:flex-end;margin-bottom:.6rem" class="no-print">
+    <button class="sbtn" onclick="window.print()">🖨️ Imprimer</button>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr>
+        <th>Bassin</th><th>Nb Actuel</th><th>Poids Moy (g)</th><th>Type Alim</th>
+        <th>Alim Théo (kg)</th>
+        <th style="background:#0a2e1a;color:var(--acc)">Alim Réel Servi (kg) ✍️</th>
+        <th style="color:#a8d8ff">Temp (°C) ✍️</th>
+        <th style="color:#a8d8ff">pH ✍️</th>
+        <th style="color:#a8d8ff">DO (mg/L) ✍️</th>
+        <th style="color:#a8d8ff">NH₃ (mg/L) ✍️</th>
+        <th>Mortalité ✍️</th>
+        <th>Obs.</th>
+      </tr></thead>
+      <tbody id="fiche-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- ═══════════════════════════════════════
+     MODAL GUIDE COMPLET
+════════════════════════════════════════ -->
+<div id="doc-modal">
+<div class="doc-box">
+  <div class="doc-topbar">
+    <h2>📖 Guide complet — Description de chaque champ</h2>
+    <button class="doc-close" onclick="closeDoc()">✕ Fermer</button>
+  </div>
+  <div class="doc-body">
+    <div class="doc-tabs" id="doc-tabs">
+      <div class="doc-tab-pill active" onclick="showDocSec('ds-config',this)">⚙️ Config Bassins</div>
+      <div class="doc-tab-pill" onclick="showDocSec('ds-alim',this)">🌾 Aliments</div>
+      <div class="doc-tab-pill" onclick="showDocSec('ds-suivi',this)">📈 Suivi Croissance</div>
+      <div class="doc-tab-pill" onclick="showDocSec('ds-log',this)">🧴 Logistique</div>
+      <div class="doc-tab-pill" onclick="showDocSec('ds-compta',this)">💰 Comptabilité</div>
+      <div class="doc-tab-pill" onclick="showDocSec('ds-cons',this)">🔍 Consultation</div>
+      <div class="doc-tab-pill" onclick="showDocSec('ds-rec',this)">🏆 Récoltes</div>
+      <div class="doc-tab-pill" onclick="showDocSec('ds-fiche',this)">🖨️ Fiche Collecte</div>
+    </div>
+
+    <!-- CONFIG BASSINS -->
+    <div id="ds-config" class="doc-sec active">
+      <div class="doc-section">
+        <div class="doc-sec-title">⚙️ Config Bassins — Données générales du bassin</div>
+        <div class="doc-field"><div class="doc-field-name">Stock Probio fût (ml)</div><div class="doc-field-body"><div class="doc-field-desc">Quantité actuelle de probiotiques disponible dans le fût en millilitres. À corriger manuellement après chaque préparation d'un nouveau batch. La capacité maximale du fût est de 100 000 ml (100 L).</div><span class="doc-field-rule dng">🔴 Alerte si &lt; 15 000 ml (15 L)</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Bassin</div><div class="doc-field-body"><div class="doc-field-desc">Nom du bassin, attribué automatiquement à la création (Bassin 01, 02...). Non modifiable directement.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Statut</div><div class="doc-field-body"><div class="doc-field-desc">État actuel du bassin. Choisir parmi : <strong style="color:var(--acc)">Actif</strong> (en production), <strong style="color:var(--purp)">Récolté</strong> (lot sorti — les données migrent vers l'onglet Récoltes), <strong style="color:var(--warn)">Vide</strong> (bassin hors service).</div><span class="doc-field-rule ok">✓ Seuls les bassins "Actif" sont comptabilisés dans les calculs</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Vol (m³)</div><div class="doc-field-body"><div class="doc-field-desc">Volume précis du bassin en mètres cubes. Modifiable par bassin pour tenir compte des différences de taille. Valeur par défaut : 3.8 m³. Ce volume est utilisé dans le calcul de la dose WATER de probiotiques.</div><span class="doc-field-rule ok">Saisir la valeur réelle mesurée (ex : 3.8, 4.2, 5.0...)</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Nb Initial</div><div class="doc-field-body"><div class="doc-field-desc">Nombre de poissons ensemencés dans le bassin au départ du cycle d'élevage. Saisir la valeur au moment de l'alevinage.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Mortalité</div><div class="doc-field-body"><div class="doc-field-desc">Nombre total de poissons morts depuis le début du cycle. À mettre à jour cumulativement (ex : si 5 poissons morts hier et 3 aujourd'hui, saisir 8). Le nombre actuel est calculé automatiquement : Nb Initial − Mortalité.</div><span class="doc-field-rule warn">⚠️ Tenir un registre journalier pour cumuler correctement</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Poids Moyen (g)</div><div class="doc-field-body"><div class="doc-field-desc">Poids moyen individuel estimé des poissons en grammes. À mettre à jour tous les 15 jours après une pesée d'échantillon. C'est cette valeur qui détermine automatiquement le type d'aliment conseillé et la ration journalière.</div><span class="doc-field-rule ok">✓ Mise à jour recommandée tous les 14–15 jours</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Type Aliment</div><div class="doc-field-body"><div class="doc-field-desc">Type de granulé utilisé pour ce bassin. Sélectionnable manuellement parmi les 5 types : G1 (&lt;5g), G2 (5–20g), G3 (20–150g), G4 (200–400g), G6 (400–600g). Le CUMP (coût moyen pondéré) de ce type est automatiquement utilisé dans la comptabilité.</div><span class="doc-field-rule warn">⚠️ À mettre à jour manuellement lors d'un changement de stade</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Alim Réel Servi (kg)</div><div class="doc-field-body"><div class="doc-field-desc">Quantité d'aliment effectivement distribuée dans le bassin lors du dernier repas, en kilogrammes. À saisir après chaque distribution. Peut différer de l'aliment théorique en cas de mauvais appétit du lot.</div><span class="doc-field-rule warn">⚠️ Un écart régulier avec la valeur théorique signale un problème de santé</span></div></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-sec-title">⚙️ Config Bassins — Mesures qualité d'eau (individuelles)</div>
+        <div class="doc-field"><div class="doc-field-name">Temp (°C)</div><div class="doc-field-body"><div class="doc-field-desc">Température de l'eau du bassin mesurée avec un thermomètre étalonné. À saisir chaque matin. La ration journalière est automatiquement réduite de 20% si la température est inférieure à 24°C.</div><span class="doc-field-rule warn">⚠️ Alerte si &lt; 24°C — ration réduite automatiquement</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">pH</div><div class="doc-field-body"><div class="doc-field-desc">Acidité ou basicité de l'eau mesurée avec un pH-mètre ou des bandelettes. La plage optimale pour le Biofloc est 6.5 à 8.2. Si le pH dépasse 8.2, la dose WATER de probiotiques est automatiquement doublée (200 ml/m³).</div><span class="doc-field-rule ok">✓ Plage optimale : 6.5 – 8.2</span>&nbsp;<span class="doc-field-rule warn">⚠️ Alerte si &gt; 8.2 ou &lt; 6.5</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">DO (mg/L)</div><div class="doc-field-body"><div class="doc-field-desc">Oxygène Dissous, mesuré avec un oxymètre. Paramètre critique pour la survie du lot. En dessous de 4 mg/L, les poissons sont en stress hypoxique. Vérifier immédiatement l'état des aérateurs.</div><span class="doc-field-rule ok">✓ Norme : ≥ 5 mg/L</span>&nbsp;<span class="doc-field-rule dng">🔴 Alerte critique si &lt; 4 mg/L — action immédiate</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">NH₃ (mg/L)</div><div class="doc-field-body"><div class="doc-field-desc">Ammoniaque Total (TAN) mesuré avec un kit colorimétrique ou un photomètre. Produit par l'excrétion des poissons et la décomposition des matières organiques. Au-delà de 0.5 mg/L, la toxicité devient dangereuse pour les poissons.</div><span class="doc-field-rule ok">✓ Norme : &lt; 0.25 mg/L</span>&nbsp;<span class="doc-field-rule dng">🔴 Alerte critique si &gt; 0.5 mg/L</span></div></div>
+      </div>
+    </div>
+
+    <!-- ALIMENTS -->
+    <div id="ds-alim" class="doc-sec">
+      <div class="doc-section">
+        <div class="doc-sec-title">🌾 Aliments — Gestion des lots d'achat et CUMP</div>
+        <div class="doc-field"><div class="doc-field-name">Type d'aliment</div><div class="doc-field-body"><div class="doc-field-desc">5 types de granulés selon le stade : G1 (&lt;5g), G2 (5–20g), G3 (20–150g), G4 (200–400g), G6 (400–600g). Chaque type dispose de sa propre fiche avec historique d'achats et calcul de coût moyen.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Quantité lot (kg)</div><div class="doc-field-body"><div class="doc-field-desc">Poids en kilogrammes du lot d'aliment acheté. Saisir la quantité nette réceptionnée. Plusieurs lots peuvent être ajoutés pour un même type, reflétant des achats successifs à des prix différents.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Prix unitaire (XOF/kg)</div><div class="doc-field-body"><div class="doc-field-desc">Prix d'achat de ce lot en Francs CFA par kilogramme. À saisir selon la facture fournisseur. Le CUMP est recalculé automatiquement à chaque nouvelle saisie.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">CUMP (XOF/kg)</div><div class="doc-field-body"><div class="doc-field-desc">Coût Unitaire Moyen Pondéré — calculé automatiquement. Formule : Σ(Quantité × Prix) ÷ Σ(Quantités). Représente le coût réel moyen de votre stock actuel, tenant compte de tous les lots à des prix différents. Utilisé dans tous les calculs de coûts.</div><span class="doc-field-rule ok">✓ Recalculé automatiquement à chaque ajout ou modification de lot</span></div></div>
+      </div>
+    </div>
+
+    <!-- SUIVI CROISSANCE -->
+    <div id="ds-suivi" class="doc-sec">
+      <div class="doc-section">
+        <div class="doc-sec-title">📈 Suivi Croissance — Saisie des pesées</div>
+        <div class="doc-field"><div class="doc-field-name">Date</div><div class="doc-field-body"><div class="doc-field-desc">Date de la pesée. Sélectionner via le calendrier. Si une entrée existe déjà pour ce bassin à cette date, elle sera remplacée automatiquement. Une seule mesure par bassin et par date est conservée.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Bassin</div><div class="doc-field-body"><div class="doc-field-desc">Bassin concerné par la pesée. Sélectionner dans la liste déroulante. Le suivi est individualisé : chaque bassin possède sa propre courbe de croissance et son propre historique.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Poids mesuré (g)</div><div class="doc-field-body"><div class="doc-field-desc">Poids moyen individuel mesuré lors de la pesée, en grammes. Calculer la moyenne sur un échantillon représentatif d'au moins 10 à 20 poissons prélevés aléatoirement dans le bassin.</div><span class="doc-field-rule ok">✓ Méthode : peser 10–20 individus, diviser par le nombre pesé</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Mortalité constatée</div><div class="doc-field-body"><div class="doc-field-desc">Nombre de poissons morts constatés lors de la pesée ou depuis la dernière mesure pour ce bassin. Cette valeur est enregistrée avec la mesure pour le suivi historique.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Cible (calculée)</div><div class="doc-field-body"><div class="doc-field-desc">Poids théorique attendu selon la courbe de référence Biofloc de +2.9 g/jour depuis la première mesure du bassin. Permet de comparer votre performance réelle à la norme.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">GMQ (g/j)</div><div class="doc-field-body"><div class="doc-field-desc">Gain Moyen Quotidien en grammes par jour, calculé entre la mesure courante et la précédente. Un GMQ inférieur à 2.5 g/j indique une croissance insuffisante.</div><span class="doc-field-rule ok">✓ Objectif : ≥ 2.9 g/j</span>&nbsp;<span class="doc-field-rule warn">⚠️ Attention si &lt; 2.5 g/j</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">FCR</div><div class="doc-field-body"><div class="doc-field-desc">Feed Conversion Ratio (Indice de Conversion Alimentaire). Rapport entre la quantité d'aliment distribuée et le gain de poids obtenu. Un FCR de 1.0 signifie qu'1 kg d'aliment produit 1 kg de gain. Plus il est bas, plus l'élevage est efficace.</div><span class="doc-field-rule ok">✓ FCR optimal Biofloc : 1.0 – 1.3</span>&nbsp;<span class="doc-field-rule dng">🔴 Alerte si FCR &gt; 1.5</span></div></div>
+      </div>
+    </div>
+
+    <!-- LOGISTIQUE -->
+    <div id="ds-log" class="doc-sec">
+      <div class="doc-section">
+        <div class="doc-sec-title">🧴 Logistique Probiotiques — Paramètres du fût</div>
+        <div class="doc-field"><div class="doc-field-name">Stock actuel (ml)</div><div class="doc-field-body"><div class="doc-field-desc">Volume de probiotiques actuellement disponible dans le fût, en millilitres. À corriger manuellement après chaque préparation d'un batch de 100 L. Le tableau hebdomadaire déduit automatiquement les prélèvements journaliers.</div><span class="doc-field-rule dng">🔴 Alerte critique si &lt; 15 000 ml</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Seuil alerte (ml)</div><div class="doc-field-body"><div class="doc-field-desc">Niveau de stock à partir duquel l'alerte rouge est déclenchée. Par défaut : 15 000 ml (15% de la capacité). Ajustable selon votre délai d'approvisionnement.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Dose FOOD (ml/kg)</div><div class="doc-field-body"><div class="doc-field-desc">Quantité de probiotiques FOOD à ajouter par kilogramme d'aliment distribué. Valeur standard : 30 ml/kg. Modifiable selon les recommandations de votre fournisseur.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Dose WATER (ml/m³)</div><div class="doc-field-body"><div class="doc-field-desc">Quantité de probiotiques WATER à ajouter par m³ d'eau de bassin. Calculée automatiquement : 100 ml/m³ en conditions normales. Si le pH moyen des bassins dépasse 8.2, la dose est automatiquement doublée à 200 ml/m³.</div><span class="doc-field-rule warn">⚠️ Doublée automatiquement si pH moyen &gt; 8.2</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Bilan hebdomadaire</div><div class="doc-field-body"><div class="doc-field-desc">Tableau récapitulatif sur 7 jours (Lundi au Dimanche). Pour chaque jour, affiche la consommation d'aliment désagrégée par type (G1 à G6), les prélèvements FOOD et WATER en ml, et le stock de probiotiques restant cumulatif. Permet d'anticiper les ruptures.</div></div></div>
+      </div>
+    </div>
+
+    <!-- COMPTABILITÉ -->
+    <div id="ds-compta" class="doc-sec">
+      <div class="doc-section">
+        <div class="doc-sec-title">💰 Comptabilité — Paramètres de coûts (XOF)</div>
+        <div class="doc-field"><div class="doc-field-name">Prix aliment</div><div class="doc-field-body"><div class="doc-field-desc">Le prix de l'aliment n'est pas saisi ici : il est calculé automatiquement via le CUMP de l'onglet 🌾 Aliments, selon le type d'aliment attribué à chaque bassin. Assurez-vous que vos lots d'achat sont à jour.</div><span class="doc-field-rule ok">✓ Automatique — issu du CUMP de l'onglet Aliments</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Probio (XOF/L)</div><div class="doc-field-body"><div class="doc-field-desc">Prix d'achat des probiotiques par litre en Francs CFA. Utilisé pour calculer le coût de probiotiques consommés par bassin sur 30 jours.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Élec (XOF/kWh)</div><div class="doc-field-body"><div class="doc-field-desc">Tarif de l'électricité en XOF par kilowattheure, selon votre facture ou abonnement. Utilisé pour estimer le coût d'aération par bassin.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Watts/bassin</div><div class="doc-field-body"><div class="doc-field-desc">Puissance électrique totale des équipements d'aération par bassin en watts. Inclure aérateurs, pompes, éclairage si applicable. Valeur par défaut : 150 W.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Heures/jour</div><div class="doc-field-body"><div class="doc-field-desc">Nombre d'heures de fonctionnement des équipements électriques par jour. En Biofloc, l'aération est généralement continue (24h/24). Ajuster si vos équipements fonctionnent à temps partiel.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Prix vente (XOF/kg)</div><div class="doc-field-body"><div class="doc-field-desc">Prix de vente de votre production au kilogramme en Francs CFA. Utilisé pour calculer le revenu estimé et la marge bénéficiaire de chaque bassin.</div><span class="doc-field-rule warn">⚠️ Mettre à jour selon les prix du marché</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Marge (%)</div><div class="doc-field-body"><div class="doc-field-desc">Calculée automatiquement : (Revenu − Coût Total) ÷ Coût Total × 100. Apparaît en vert si positive, en rouge si négative. Basée sur 30 jours d'exploitation.</div><span class="doc-field-rule ok">✓ Objectif : marge &gt; 15%</span></div></div>
+      </div>
+    </div>
+
+    <!-- CONSULTATION -->
+    <div id="ds-cons" class="doc-sec">
+      <div class="doc-section">
+        <div class="doc-sec-title">🔍 Consultation — Diagnostic individuel</div>
+        <div class="doc-field"><div class="doc-field-name">Bassin sélectionné</div><div class="doc-field-body"><div class="doc-field-desc">Choisir le bassin à diagnostiquer dans la liste déroulante. Tous les bassins configurés (actifs, récoltés ou vides) sont disponibles. Le rapport est mis à jour instantanément.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Date (calendrier)</div><div class="doc-field-body"><div class="doc-field-desc">Date de consultation à sélectionner via le calendrier. Si une pesée a été enregistrée dans Suivi Croissance pour ce bassin à cette date, ses données apparaissent dans le rapport. Si aucune donnée n'existe, un message ERROR s'affiche — cela ne signifie pas un problème, seulement qu'il n'y a pas de mesure enregistrée ce jour-là.</div><span class="doc-field-rule warn">⚠️ ERROR affiché = pas de pesée pour cette combinaison bassin/date</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Alertes automatiques</div><div class="doc-field-body"><div class="doc-field-desc">Des alertes colorées apparaissent automatiquement si des valeurs hors norme sont détectées pour le bassin sélectionné : NH₃ élevé, DO critique, pH anormal, température basse. Ces alertes sont basées sur les dernières valeurs saisies dans Config Bassins.</div></div></div>
+      </div>
+    </div>
+
+    <!-- RÉCOLTES -->
+    <div id="ds-rec" class="doc-sec">
+      <div class="doc-section">
+        <div class="doc-sec-title">🏆 Récoltes — Synthèse des lots récoltés</div>
+        <div class="doc-field"><div class="doc-field-name">Comment déclencher</div><div class="doc-field-body"><div class="doc-field-desc">Un bassin apparaît dans cet onglet dès que son statut est passé à "Récolté" dans Config Bassins. La date de récolte est enregistrée automatiquement au moment du changement de statut.</div><span class="doc-field-rule ok">✓ Automatique — aucune saisie supplémentaire requise</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Durée d'élevage</div><div class="doc-field-body"><div class="doc-field-desc">Calculée automatiquement à partir des mesures enregistrées dans Suivi Croissance : écart entre la première et la dernière pesée du bassin. Pour une durée précise, assurez-vous d'avoir saisi la pesée initiale d'ensemencement.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Taux de survie (%)</div><div class="doc-field-body"><div class="doc-field-desc">Pourcentage de poissons vivants à la récolte par rapport au nombre initial : (Nb Initial − Mortalité) ÷ Nb Initial × 100. Un taux de survie supérieur à 85% est considéré comme satisfaisant en Biofloc.</div><span class="doc-field-rule ok">✓ Objectif : &gt; 85%</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Biomasse récoltée</div><div class="doc-field-body"><div class="doc-field-desc">Calculée automatiquement : Nb actuel × Poids moyen final ÷ 1000. C'est la production effective en kilogrammes que vous pouvez vendre.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">FCR estimé</div><div class="doc-field-body"><div class="doc-field-desc">FCR calculé sur toute la durée du cycle : aliment total distribué ÷ gain de biomasse total. Indicateur clé de la performance économique du lot.</div><span class="doc-field-rule ok">✓ FCR optimal : 1.0 – 1.3</span>&nbsp;<span class="doc-field-rule dng">🔴 Insuffisant si &gt; 1.5</span></div></div>
+      </div>
+    </div>
+
+    <!-- FICHE COLLECTE -->
+    <div id="ds-fiche" class="doc-sec">
+      <div class="doc-section">
+        <div class="doc-sec-title">🖨️ Fiche Collecte — Utilisation terrain</div>
+        <div class="doc-field"><div class="doc-field-name">À quoi sert cette fiche</div><div class="doc-field-body"><div class="doc-field-desc">Tableau imprimable à emporter sur le terrain lors de la tournée quotidienne des bassins. Les colonnes pré-remplies (Nb actuel, Poids moyen, Type aliment, Aliment théorique) sont calculées automatiquement depuis Config Bassins.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Alim Réel Servi (kg) ✍️</div><div class="doc-field-body"><div class="doc-field-desc">Colonne à remplir à la main sur le terrain. Notez la quantité d'aliment effectivement distribuée dans chaque bassin, qui peut différer du théorique selon l'appétit du lot observé.</div><span class="doc-field-rule warn">⚠️ Champ le plus important — à reporter ensuite dans Config Bassins</span></div></div>
+        <div class="doc-field"><div class="doc-field-name">Temp, pH, DO, NH₃ ✍️</div><div class="doc-field-body"><div class="doc-field-desc">Mesures à effectuer bassin par bassin avec vos appareils de mesure (thermomètre, pH-mètre, oxymètre, kit ammoniac). Les valeurs de référence du jour précédent apparaissent en filigrane pour comparaison. Reporter ensuite dans Config Bassins.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Mortalité ✍️</div><div class="doc-field-body"><div class="doc-field-desc">Nombre de poissons morts retrouvés lors de la tournée. À noter pour mise à jour cumulative dans Config Bassins.</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Observations ✍️</div><div class="doc-field-body"><div class="doc-field-desc">Champ libre pour noter tout comportement anormal observé : manque d'appétit, comportement erratique en surface, coloration inhabituelle, mousses, odeurs, anomalies techniques (aérateurs défaillants...).</div></div></div>
+        <div class="doc-field"><div class="doc-field-name">Comment imprimer</div><div class="doc-field-body"><div class="doc-field-desc">Cliquer sur le bouton "🖨️ Imprimer" en haut à droite de l'onglet. La fiche s'imprime proprement en format A4, sans les menus ni la navigation. Imprimer chaque matin avant la tournée.</div></div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div><!-- /doc-modal -->
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let bCount=17;
+const FEED_TYPES=[
+  {id:'G1',name:'Granulé 1',stage:'< 5 g',color:'#c084fc',batches:[]},
+  {id:'G2',name:'Granulé 2',stage:'5 – 20 g',color:'#34d399',batches:[]},
+  {id:'G3',name:'Granulé 3',stage:'20 – 150 g',color:'#60a5fa',batches:[]},
+  {id:'G4',name:'Granulé 4',stage:'200 – 400 g',color:'#f59e0b',batches:[]},
+  {id:'G6',name:'Granulé 6',stage:'400 – 600 g',color:'#f87171',batches:[]},
+];
+// default batches
+FEED_TYPES[0].batches=[{id:1,qty:25,price:650}];
+FEED_TYPES[1].batches=[{id:1,qty:50,price:700}];
+FEED_TYPES[2].batches=[{id:1,qty:100,price:750}];
+FEED_TYPES[3].batches=[{id:1,qty:150,price:800}];
+FEED_TYPES[4].batches=[{id:1,qty:200,price:850}];
+let batchId=10;
+
+let state={
+  bassins:Array.from({length:16},(_,i)=>({
+    name:`Bassin ${String(i+1).padStart(2,'0')}`,
+    vol:3.8,nbInit:1000,mort:0,poids:5+i*0.3,
+    alimReel:0,temp:26,ph:7.8,DO:6.5,NH3:0.1,statut:'Actif',
+    feedId:'G1',harvestDate:null
+  })),
+  suivi:[],suiviId:0,
+};
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+const G=id=>document.getElementById(id);
+const fv=id=>parseFloat(G(id)?.value)||0;
+const fmt=(v,d=2)=>isNaN(v)||v===null?'—':Number(v).toFixed(d);
+const xof=v=>isNaN(v)?'—':Math.round(v).toLocaleString('fr-FR')+' XOF';
+const pct=v=>(v*100).toFixed(1)+'%';
+const today=()=>new Date().toISOString().split('T')[0];
+
+function cump(ft){
+  const tot=ft.batches.reduce((s,b)=>s+b.qty,0);
+  if(!tot) return 0;
+  return ft.batches.reduce((s,b)=>s+b.qty*b.price,0)/tot;
+}
+function cumpForBassin(b){ return cump(FEED_TYPES.find(f=>f.id===(b.feedId||'G1'))||FEED_TYPES[0]); }
+
+function ration(poids,temp){
+  let r=poids<=5?0.05:poids<=20?0.035:0.025;
+  if(temp<24) r*=0.8;
+  return r;
+}
+function calcBassin(b){
+  const nbActuel=b.nbInit-b.mort;
+  const biomasse=nbActuel*b.poids/1000;
+  const rat=ration(b.poids,b.temp);
+  const alimTheo=biomasse*rat;
+  const ft=FEED_TYPES.find(f=>f.id===(b.feedId||'G1'))||FEED_TYPES[0];
+  return {nbActuel,biomasse,rat,alimTheo,ft};
+}
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function sw(id){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
+  G(id).classList.add('active');
+  ['t0','t1','t2','t3','t4','t5','t6','t7','t8'].forEach((t,i)=>{
+    if(t===id) document.querySelectorAll('.tb')[i].classList.add('active');
+  });
+  if(id==='t2') renderFeed();
+  if(id==='t3') renderChart();
+  if(id==='t4') upLog();
+  if(id==='t5') upCompta();
+  if(id==='t6') upCons();
+  if(id==='t7') renderRecoltes();
+  if(id==='t8') renderFiche();
+}
+
+// ═══════════════════════════════════════
+// CONFIG BASSINS
+// ═══════════════════════════════════════
+function addBassin(){
+  state.bassins.push({name:`Bassin ${String(bCount).padStart(2,'0')}`,vol:3.8,nbInit:1000,mort:0,poids:5,alimReel:0,temp:26,ph:7.8,DO:6.5,NH3:0.1,statut:'Actif',feedId:'G1',harvestDate:null});
+  bCount++;
+  buildBTable(); popSelects(); upAll();
+}
+function removeBassin(i){
+  if(state.bassins.length<=1){alert('Minimum 1 bassin.');return;}
+  if(!confirm(`Supprimer ${state.bassins[i].name} ?`))return;
+  state.bassins.splice(i,1);
+  buildBTable(); popSelects(); upAll();
+}
+function buildBTable(){
+  const tb=G('b-tbody'); tb.innerHTML='';
+  state.bassins.forEach((b,i)=>{
+    const c=calcBassin(b);
+    const stat_color=b.statut==='Actif'?'b-ok':b.statut==='Récolté'?'b-purp':'b-warn';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="cn">${b.name}</td>
+      <td><select class="si" style="font-size:10px;padding:2px 5px" onchange="state.bassins[${i}].statut=this.value;if(this.value==='Récolté')state.bassins[${i}].harvestDate='${today()}';upAll()">
+        <option${b.statut==='Actif'?' selected':''}>Actif</option>
+        <option${b.statut==='Récolté'?' selected':''}>Récolté</option>
+        <option${b.statut==='Vide'?' selected':''}>Vide</option>
+      </select></td>
+      <td><input type="number" class="ci" value="${fmt(b.vol,1)}" step="0.1" style="width:55px" onchange="state.bassins[${i}].vol=+this.value;upAll()"></td>
+      <td><input type="number" class="ci" value="${b.nbInit}" style="width:60px" onchange="state.bassins[${i}].nbInit=+this.value;upAll()"></td>
+      <td><input type="number" class="ci" value="${b.mort}" style="width:50px" onchange="state.bassins[${i}].mort=+this.value;upAll()"></td>
+      <td class="cf" id="bn-${i}">—</td>
+      <td><input type="number" class="ci" value="${fmt(b.poids,1)}" step="0.1" style="width:60px" onchange="state.bassins[${i}].poids=+this.value;upAll()"></td>
+      <td><select class="si" style="font-size:10px;padding:2px 6px;border-color:var(--gold);color:var(--gold)" onchange="state.bassins[${i}].feedId=this.value;upAll()">
+        ${FEED_TYPES.map(f=>`<option value="${f.id}"${(b.feedId||'G2')===f.id?' selected':''}>${f.name} (${f.stage})</option>`).join('')}
+      </select></td>
+      <td class="cf" id="bb-${i}">—</td>
+      <td class="cf" id="br-${i}">—</td>
+      <td class="cf" id="bt-${i}">—</td>
+      <td><input type="number" class="ci" value="${fmt(b.alimReel,3)}" step="0.001" style="width:65px" onchange="state.bassins[${i}].alimReel=+this.value;upAll()"></td>
+      <td><input type="number" id="bT-${i}" class="ci${b.temp<24?' wi':''}" value="${fmt(b.temp,1)}" step="0.1" style="width:55px" onchange="state.bassins[${i}].temp=+this.value;upAll()"></td>
+      <td><input type="number" id="bP-${i}" class="ci${b.ph>8.2||b.ph<6.5?' wi':''}" value="${fmt(b.ph,2)}" step="0.01" style="width:52px" onchange="state.bassins[${i}].ph=+this.value;upAll()"></td>
+      <td><input type="number" id="bD-${i}" class="ci${b.DO<4?' di':''}" value="${fmt(b.DO,1)}" step="0.1" style="width:52px" onchange="state.bassins[${i}].DO=+this.value;upAll()"></td>
+      <td><input type="number" id="bN-${i}" class="ci${b.NH3>0.5?' di':''}" value="${fmt(b.NH3,3)}" step="0.01" style="width:58px" onchange="state.bassins[${i}].NH3=+this.value;upAll()"></td>
+      <td><button class="dbtn" onclick="removeBassin(${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+function upConfigCalcs(){
+  let tBio=0,tTheo=0,tReel=0,actifs=0,sumPh=0,sumT=0,recoltes=0;
+  state.bassins.forEach((b,i)=>{
+    const c=calcBassin(b);
+    ['bn','bb','br','bt'].forEach((p,j)=>{
+      const el=G(`${p}-${i}`); if(!el)return;
+      el.textContent=[c.nbActuel,fmt(c.biomasse,3),pct(c.rat),fmt(c.alimTheo,3)][j];
+    });
+    const sc=(id,val,cls)=>{const e=G(id);if(e)e.className='ci'+(cls?' '+cls:'');};
+    sc(`bT-${i}`,'',b.temp<24?'wi':'');
+    sc(`bP-${i}`,'',b.ph>8.2||b.ph<6.5?'wi':'');
+    sc(`bD-${i}`,'',b.DO<4?'di':'');
+    sc(`bN-${i}`,'',b.NH3>0.5?'di':'');
+    tBio+=c.biomasse;tTheo+=c.alimTheo;tReel+=b.alimReel;
+    if(b.statut==='Actif'){actifs++;sumPh+=b.ph;sumT+=b.temp;}
+    if(b.statut==='Récolté') recoltes++;
+  });
+  const na=actifs||1,avgPh=sumPh/na,avgT=sumT/na;
+  const m=G('b-metrics');
+  if(m) m.innerHTML=`
+    <div class="met${avgT<24?' warn':''}"><div class="mlbl">Temp moy</div><div class="mval">${fmt(avgT,1)}<span class="munit">°C</span></div></div>
+    <div class="met${avgPh>8.2||avgPh<6.5?' warn':''}"><div class="mlbl">pH moyen</div><div class="mval">${fmt(avgPh,2)}</div></div>
+    <div class="met"><div class="mlbl">Bassins actifs</div><div class="mval">${actifs}</div></div>
+    <div class="met ok"><div class="mlbl">Biomasse totale</div><div class="mval">${fmt(tBio,2)}<span class="munit">kg</span></div></div>
+    <div class="met"><div class="mlbl">Alim théo/j</div><div class="mval">${fmt(tTheo,3)}<span class="munit">kg</span></div></div>
+    <div class="met"><div class="mlbl">Alim réel/j</div><div class="mval">${fmt(tReel,3)}<span class="munit">kg</span></div></div>`;
+  G('s-actifs').textContent=actifs;
+  G('s-bio').textContent=fmt(tBio,1)+' kg';
+  G('s-alim').textContent=fmt(tTheo,3)+' kg';
+  G('s-recolte').textContent=recoltes;
+  const sp=fv('g-probio');
+  G('s-stock').textContent=(sp/1000).toFixed(1)+' L';
+  G('s-stock').style.color=sp<15000?'var(--dng)':sp<25000?'var(--warn)':'var(--t1)';
+}
+
+// ═══════════════════════════════════════
+// ALIMENTS — CUMP
+// ═══════════════════════════════════════
+function renderFeed(){
+  const grid=G('feed-grid'); if(!grid)return;
+  grid.innerHTML='';
+  FEED_TYPES.forEach((ft,fi)=>{
+    const c=cump(ft), totQty=ft.batches.reduce((s,b)=>s+b.qty,0);
+    const div=document.createElement('div');
+    div.className='feed-card';
+    div.innerHTML=`
+      <div class="feed-header">
+        <div><div class="feed-name" style="color:${ft.color}">${ft.name}</div><div class="feed-stage">Stade : ${ft.stage}</div></div>
+        <div class="badge b-gold">${xof(c)}/kg</div>
+      </div>
+      <div class="cump-val">${c>0?xof(c):'—'}</div>
+      <div style="font-size:9px;color:var(--t3);margin-bottom:.5rem">CUMP = Coût Unitaire Moyen Pondéré | Stock : ${totQty.toLocaleString()} kg</div>
+      <div style="font-size:9px;color:var(--t2);margin-bottom:.4rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px">Lots d'achat</div>
+      <div id="batches-${fi}"></div>
+      <div class="batch-row" style="margin-top:.5rem">
+        <input type="number" id="nqty-${fi}" placeholder="Qté (kg)" style="width:75px">
+        <input type="number" id="nprice-${fi}" placeholder="Prix/kg (XOF)" style="width:95px">
+        <button class="sbtn" style="padding:4px 10px;font-size:10px" onclick="addBatch(${fi})">+ Lot</button>
+      </div>`;
+    grid.appendChild(div);
+    renderBatches(fi);
+  });
+  renderFeedMetrics();
+}
+function renderBatches(fi){
+  const ft=FEED_TYPES[fi], el=G(`batches-${fi}`); if(!el)return;
+  el.innerHTML='';
+  ft.batches.forEach((b,bi)=>{
+    const row=document.createElement('div');
+    row.className='batch-row';
+    row.innerHTML=`
+      <input type="number" value="${b.qty}" style="width:65px" onchange="FEED_TYPES[${fi}].batches[${bi}].qty=+this.value;renderFeedCard(${fi})">
+      <span style="font-size:9px;color:var(--t3)">kg @</span>
+      <input type="number" value="${b.price}" style="width:80px" onchange="FEED_TYPES[${fi}].batches[${bi}].price=+this.value;renderFeedCard(${fi})">
+      <span style="font-size:9px;color:var(--t3)">XOF</span>
+      <button class="dbtn" onclick="removeBatch(${fi},${bi})">✕</button>`;
+    el.appendChild(row);
+  });
+}
+function renderFeedCard(fi){
+  // Re-render just the CUMP and batches of one card
+  const ft=FEED_TYPES[fi],c=cump(ft),totQty=ft.batches.reduce((s,b)=>s+b.qty,0);
+  // Find cump-val in card
+  const cards=G('feed-grid').querySelectorAll('.feed-card');
+  if(cards[fi]){
+    const cv=cards[fi].querySelector('.cump-val'); if(cv) cv.textContent=c>0?xof(c):'—';
+    const bv=cards[fi].querySelector('.badge'); if(bv) bv.textContent=xof(c)+'/kg';
+    const info=cards[fi].querySelectorAll('div'); // stock info line
+  }
+  renderBatches(fi); renderFeedMetrics();
+}
+function addBatch(fi){
+  const qty=parseFloat(G(`nqty-${fi}`)?.value)||0, price=parseFloat(G(`nprice-${fi}`)?.value)||0;
+  if(!qty||!price){alert('Saisir quantité et prix.');return;}
+  FEED_TYPES[fi].batches.push({id:batchId++,qty,price});
+  G(`nqty-${fi}`).value=''; G(`nprice-${fi}`).value='';
+  renderFeed();
+}
+function removeBatch(fi,bi){FEED_TYPES[fi].batches.splice(bi,1);renderFeed();}
+function renderFeedMetrics(){
+  const m=G('feed-metrics'); if(!m)return;
+  m.innerHTML=FEED_TYPES.map(ft=>{
+    const c=cump(ft),tq=ft.batches.reduce((s,b)=>s+b.qty,0);
+    return `<div class="met"><div class="mlbl" style="color:${ft.color}">${ft.name}</div><div class="mval" style="font-size:14px;color:var(--gold)">${c>0?xof(c):xof(0)}<br><span class="munit">${tq.toLocaleString()} kg stock</span></div></div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// SUIVI CROISSANCE
+// ═══════════════════════════════════════
+function popSelects(){
+  const names=state.bassins.map(b=>b.name);
+  ['sc-bassin','cons-b','chart-b','sc-filter'].forEach(id=>{
+    const sel=G(id); if(!sel)return;
+    const cur=sel.value, hasAll=(id==='chart-b'||id==='sc-filter');
+    sel.innerHTML=hasAll?'<option value="">Tous</option>':'<option value="">Sélectionner...</option>';
+    names.forEach(n=>{const o=document.createElement('option');o.value=n;o.textContent=n;if(n===cur)o.selected=true;sel.appendChild(o);});
+  });
+}
+function addSuivi(){
+  const date=G('sc-date').value,bassin=G('sc-bassin').value,poids=parseFloat(G('sc-poids').value),mort=parseInt(G('sc-mort').value)||0;
+  if(!date||!bassin||isNaN(poids)){alert('Date, Bassin et Poids requis.');return;}
+  state.suivi=state.suivi.filter(r=>!(r.bassin===bassin&&r.date===date));
+  state.suivi.push({id:state.suiviId++,date,bassin,poids,mort});
+  state.suivi.sort((a,b)=>a.date.localeCompare(b.date)||a.bassin.localeCompare(b.bassin));
+  G('sc-poids').value='';G('sc-mort').value='';
+  renderSuivi(); renderChart();
+}
+function removeSuivi(id){state.suivi=state.suivi.filter(r=>r.id!==id);renderSuivi();renderChart();}
+function renderSuivi(){
+  const tb=G('sc-tbody'); if(!tb)return;
+  const fl=G('sc-filter')?.value||'';
+  const rows=fl?state.suivi.filter(r=>r.bassin===fl):state.suivi;
+  tb.innerHTML='';
+  rows.forEach(r=>{
+    const br=state.suivi.filter(s=>s.bassin===r.bassin).sort((a,b)=>a.date.localeCompare(b.date));
+    const idx=br.findIndex(s=>s.id===r.id),first=br[0],prev=idx>0?br[idx-1]:null;
+    const days=first?(new Date(r.date)-new Date(first.date))/(86400000):0;
+    const cible=5+2.9*days;
+    const gmq=prev?(r.poids-prev.poids)/Math.max(1,(new Date(r.date)-new Date(prev.date))/(86400000)):0;
+    const b=state.bassins.find(x=>x.name===r.bassin);
+    const c=b?calcBassin(b):{alimTheo:0};
+    const alimCum=c.alimTheo*1000*days;
+    const gain=first?r.poids-first.poids:0;
+    const fcr=gain>0?(alimCum/gain):null;
+    const fcrH=fcr===null?'—':fcr>1.5?`<span class="fcr-bad">${fmt(fcr,2)}</span>`:`<span class="fcr-ok">${fmt(fcr,2)}</span>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.date}</td><td style="font-size:10px;color:var(--t2)">${r.bassin}</td>
+      <td style="color:var(--acc);font-weight:700">${fmt(r.poids,1)}</td>
+      <td class="cf">${fmt(cible,1)}</td>
+      <td class="cf" style="color:${gmq<2.5?'var(--warn)':''}">${fmt(gmq,2)}</td>
+      <td>${fcrH}</td>
+      <td><button class="dbtn" onclick="removeSuivi(${r.id})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+let gc=null;
+function renderChart(){
+  const canvas=G('gc'); if(!canvas)return;
+  if(gc){gc.destroy();gc=null;}
+  const fb=G('chart-b')?.value||'';
+  const cols=['#00c9a7','#3d8ef5','#f5a623','#ff6b8a','#a78bfa','#34d399','#fbbf24'];
+  const ds=[];
+  const maxD=Math.max(...state.suivi.map(r=>{const br=state.suivi.filter(s=>s.bassin===r.bassin);const fd=br.sort((a,b)=>a.date.localeCompare(b.date))[0]?.date;return fd?(new Date(r.date)-new Date(fd))/(86400000):0;}),30);
+  ds.push({label:'Cible +2.9g/j',data:Array.from({length:Math.ceil(maxD)+1},(_,i)=>({x:i,y:5+2.9*i})),borderColor:'#f5a623',backgroundColor:'transparent',pointRadius:0,showLine:true,borderDash:[5,4],borderWidth:1.5,tension:0});
+  const show=fb?[fb]:[...new Set(state.suivi.map(r=>r.bassin))];
+  show.forEach((bn,ci)=>{
+    const rows=state.suivi.filter(r=>r.bassin===bn).sort((a,b)=>a.date.localeCompare(b.date));
+    if(!rows.length)return;
+    const fd=rows[0].date,col=cols[ci%cols.length];
+    ds.push({label:bn,data:rows.map(r=>({x:(new Date(r.date)-new Date(fd))/(86400000),y:r.poids})),borderColor:col,backgroundColor:col+'33',pointRadius:4,showLine:true,tension:.3,borderWidth:2});
+  });
+  gc=new Chart(canvas,{type:'scatter',data:{datasets:ds},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#6a90b8',font:{size:9},boxWidth:10}}},
+    scales:{x:{title:{display:true,text:'Jours',color:'#6a90b8'},ticks:{color:'#6a90b8'},grid:{color:'#1a3550'}},
+            y:{title:{display:true,text:'Poids (g)',color:'#6a90b8'},ticks:{color:'#6a90b8'},grid:{color:'#1a3550'}}}}});
+}
+
+// ═══════════════════════════════════════
+// LOGISTIQUE
+// ═══════════════════════════════════════
+function upLog(){
+  const stock=fv('p-stock'),seuil=fv('p-seuil')||15000,doseFOOD=fv('p-food');
+  const actBassins=state.bassins.filter(b=>b.statut==='Actif');
+  const avgPh=actBassins.length?actBassins.reduce((s,b)=>s+b.ph,0)/actBassins.length:7.8;
+  const doseWATER=avgPh>8.2?200:100;
+  let tVol=0;
+  actBassins.forEach(b=>{tVol+=b.vol;});
+  const dwd=G('dw-disp');
+  if(dwd) dwd.innerHTML=`<span style="color:${avgPh>8.2?'var(--warn)':'var(--acc)'}">${doseWATER} ml/m³</span>`;
+  const phi=G('ph-intel');
+  if(phi) phi.innerHTML=`<div style="display:flex;align-items:center;gap:10px;padding:.4rem 0;border-bottom:1px solid var(--b1)">
+    <span style="font-size:10px;color:var(--t2)">pH moy (${actBassins.length} actifs)</span>
+    <span style="font-family:var(--mono);font-size:17px;font-weight:700;color:${avgPh>8.2?'var(--warn)':'var(--acc)'}">${fmt(avgPh,2)}</span>
+    <span class="badge ${avgPh>8.2?'b-warn':'b-ok'}">${avgPh>8.2?'⚠ Dose doublée':'✓ Standard'}</span>
+  </div>
+  <div style="font-size:9px;color:var(--t3);margin-top:.4rem">pH individuel par bassin — modifiable dans Config Bassins</div>`;
+  const pp=Math.min(100,stock/100000*100);
+  const sd=G('stock-disp');
+  if(sd) sd.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+      <div style="font-size:22px;font-weight:800;font-family:var(--mono);color:${stock<seuil?'var(--dng)':stock<25000?'var(--warn)':'var(--acc)'}">${(stock/1000).toFixed(1)} L</div>
+      <div class="badge ${stock<seuil?'b-dng':stock<25000?'b-warn':'b-ok'}">${stock<seuil?'🔴 CRITIQUE':stock<25000?'⚠ Attention':'✓ OK'}</div>
+    </div>
+    <div class="sbar"><div class="sbar-fill" style="width:${pp}%;background:${stock<seuil?'var(--dng)':stock<25000?'var(--warn)':'var(--acc)'}"></div></div>
+    <div style="font-size:9px;color:var(--t3);margin-top:3px">${fmt(pp,1)}% — Seuil : ${(seuil/1000).toFixed(0)} L</div>`;
+  G('s-stock').textContent=(stock/1000).toFixed(1)+' L';
+  G('s-stock').style.color=stock<seuil?'var(--dng)':stock<25000?'var(--warn)':'var(--t1)';
+  const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+  const tb=G('log-tbody'); if(!tb)return;
+  tb.innerHTML=''; let sc=stock;
+
+  // Compute daily aliment per feed type from active bassins
+  const feedTheo={G1:0,G2:0,G3:0,G4:0,G6:0};
+  actBassins.forEach(b=>{
+    const c=calcBassin(b);
+    const fid=b.feedId||'G1';
+    if(feedTheo[fid]!==undefined) feedTheo[fid]+=c.alimTheo;
+  });
+  const tTheoTotal=Object.values(feedTheo).reduce((s,v)=>s+v,0);
+
+  days.forEach(d=>{
+    const fm=tTheoTotal*doseFOOD, wm=doseWATER*tVol, tot=fm+wm;
+    sc-=tot;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-weight:600">${d}</td>
+      <td class="cf" style="color:#c084fc">${fmt(feedTheo.G1,3)}</td>
+      <td class="cf" style="color:#34d399">${fmt(feedTheo.G2,3)}</td>
+      <td class="cf" style="color:#60a5fa">${fmt(feedTheo.G3,3)}</td>
+      <td class="cf" style="color:#f59e0b">${fmt(feedTheo.G4,3)}</td>
+      <td class="cf" style="color:#f87171">${fmt(feedTheo.G6,3)}</td>
+      <td class="cf" style="font-weight:700;color:var(--t1)">${fmt(tTheoTotal,3)}</td>
+      <td class="cf">${Math.round(fm).toLocaleString()}</td>
+      <td class="cf">${fmt(tVol,2)}</td>
+      <td class="cf">${Math.round(wm).toLocaleString()}</td>
+      <td class="cf">${Math.round(tot).toLocaleString()}</td>
+      <td style="font-weight:700;color:${sc<seuil?'var(--dng)':sc<25000?'var(--warn)':'var(--acc)'}">${Math.round(sc).toLocaleString()}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════
+// COMPTABILITÉ
+// ═══════════════════════════════════════
+function upCompta(){
+  const pProbio=fv('c-probio'),tarif=fv('c-elec'),watts=fv('c-watts'),heures=fv('c-heures'),pVente=fv('c-vente');
+  const cElecJour=(watts/1000)*heures*tarif;
+  let tCout=0,tRev=0,tM=0;
+  const tb=G('compta-tbody'); if(!tb)return; tb.innerHTML='';
+  state.bassins.forEach(b=>{
+    const c=calcBassin(b);
+    const pAlim=cump(c.ft);
+    const alimMois=c.alimTheo*30,cAlim=alimMois*pAlim;
+    const cProbio=(alimMois*30+c.biomasse*100)/1000*pProbio;
+    const cElec=cElecJour*30,cTotal=cAlim+cProbio+cElec;
+    const rev=c.biomasse*pVente,marge=rev-cTotal,mp=cTotal>0?marge/cTotal:0;
+    tCout+=cTotal;tRev+=rev;tM+=marge;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="cn">${b.name}</td>
+      <td><span class="badge ${b.statut==='Actif'?'b-ok':b.statut==='Récolté'?'b-purp':'b-warn'}">${b.statut}</span></td>
+      <td><span class="badge b-gold" style="font-size:9px">${c.ft.name}</span></td>
+      <td class="cf">${xof(cump(c.ft))}</td>
+      <td class="cf">${fmt(c.biomasse,3)}</td>
+      <td class="cf">${xof(cAlim)}</td>
+      <td class="cf">${xof(cProbio)}</td>
+      <td class="cf">${xof(cElec)}</td>
+      <td class="cf" style="font-weight:700">${xof(cTotal)}</td>
+      <td class="cf">${xof(rev)}</td>
+      <td style="font-weight:700;color:${marge>0?'var(--acc)':'var(--dng)'}">${xof(marge)}</td>
+      <td style="color:${mp>0?'var(--acc)':'var(--dng)'}">${pct(mp)}</td>`;
+    tb.appendChild(tr);
+  });
+  const m=G('compta-metrics');
+  if(m) m.innerHTML=`
+    <div class="met"><div class="mlbl">Coût total (30j)</div><div class="mval" style="font-size:13px">${xof(tCout)}</div></div>
+    <div class="met"><div class="mlbl">Revenu estimé</div><div class="mval" style="font-size:13px">${xof(tRev)}</div></div>
+    <div class="met ${tM>0?'ok':'dng'}"><div class="mlbl">Marge totale</div><div class="mval" style="font-size:13px">${xof(tM)}</div></div>
+    <div class="met ${tCout>0&&tM/tCout>0.15?'ok':'warn'}"><div class="mlbl">Marge %</div><div class="mval">${pct(tCout>0?tM/tCout:0)}</div></div>`;
+}
+
+// ═══════════════════════════════════════
+// CONSULTATION
+// ═══════════════════════════════════════
+function upCons(){
+  const bn=G('cons-b')?.value,dv=G('cons-d')?.value;
+  const bioDiv=G('cons-bio'),finDiv=G('cons-fin'),alert=G('cons-alert'),err=G('cons-err'),body=G('cons-body');
+  if(!bioDiv)return;
+  err.style.display='none'; body.style.display='grid';
+  if(!bn||!dv){bioDiv.innerHTML=finDiv.innerHTML='<div style="color:var(--t3);font-size:11px;padding:.4rem 0">Sélectionner bassin et date...</div>';if(alert)alert.innerHTML='';return;}
+  const b=state.bassins.find(x=>x.name===bn);
+  if(!b){err.style.display='block';body.style.display='none';return;}
+  const sc=state.suivi.filter(r=>r.bassin===bn&&r.date===dv);
+  const allSc=state.suivi.filter(r=>r.bassin===bn);
+  if(dv&&allSc.length>0&&sc.length===0){err.style.display='block';body.style.display='none';if(alert)alert.innerHTML='<div class="badge b-dng">❌ Aucune donnée</div>';return;}
+  const c=calcBassin(b);
+  const pProbio=fv('c-probio'),tarif=fv('c-elec'),watts=fv('c-watts'),heures=fv('c-heures'),pVente=fv('c-vente');
+  const pAlim=cump(c.ft);
+  const cAlim=(c.alimTheo*30)*pAlim,cElec=(watts/1000)*heures*tarif*30;
+  const cProbio=(c.alimTheo*30*30+c.biomasse*100)/1000*pProbio;
+  const cTotal=cAlim+cProbio+cElec,rev=c.biomasse*pVente,marge=rev-cTotal;
+  const m=sc[0],first=allSc.sort((a,b2)=>a.date.localeCompare(b2.date))[0];
+  const days=m&&first?(new Date(m.date)-new Date(first.date))/(86400000):0;
+  const al=[];
+  if(b.NH3>0.5)al.push({t:'dng',m:'NH₃ ÉLEVÉ — Augmenter aération'});
+  if(b.DO<4)al.push({t:'dng',m:'DO CRITIQUE — Vérifier aérateurs'});
+  if(b.ph>8.2)al.push({t:'warn',m:'pH > 8.2 — Dose WATER doublée'});
+  if(b.temp<24)al.push({t:'warn',m:'Temp < 24°C — Ration réduite'});
+  const f=(cat,lbl,val,col='')=>`<div class="cfield"><div class="cf-cat">${cat}</div><div class="cf-lbl">${lbl}</div><div class="cf-val"${col?` style="color:${col}"`:''}>${val}</div></div>`;
+  bioDiv.innerHTML=
+    f('Population','Nb actuel',c.nbActuel)+f('Population','Biomasse',fmt(c.biomasse,3)+' kg')+
+    f('Croissance','Poids moyen',fmt(b.poids,1)+' g')+f('Croissance','Vol bassin',fmt(b.vol,1)+' m³')+
+    f('Alimentation','Type aliment',c.ft.name,'var(--gold)')+f('Alimentation','CUMP',xof(pAlim),'var(--gold)')+
+    f('Alimentation','Ration',pct(c.rat))+(m?f('Mesure','Poids mesuré',fmt(m.poids,1)+' g','var(--acc)'):'')+
+    (m?f('Mesure','Cible J+'+Math.round(days),fmt(5+2.9*days,1)+' g'):'')+
+    f('Qualité eau','Température',fmt(b.temp,1)+'°C',b.temp<24?'var(--warn)':'')+
+    f('Qualité eau','pH',fmt(b.ph,2),b.ph>8.2||b.ph<6.5?'var(--warn)':'')+
+    f('Qualité eau','DO',fmt(b.DO,1)+' mg/L',b.DO<4?'var(--dng)':'')+
+    f('Qualité eau','NH₃',fmt(b.NH3,3)+' mg/L',b.NH3>0.5?'var(--dng)':'');
+  finDiv.innerHTML=
+    f('Finance','Coût alim (30j)',xof(cAlim))+f('Finance','Coût probio (30j)',xof(cProbio))+
+    f('Finance','Coût élec (30j)',xof(cElec))+f('Finance','Coût total (30j)',xof(cTotal),'var(--t1)')+
+    f('Finance','Revenu estimé',xof(rev))+f('Finance','Marge',xof(marge),marge>0?'var(--acc)':'var(--dng)')+
+    f('Finance','Marge %',pct(cTotal>0?marge/cTotal:0),marge>0?'var(--acc)':'var(--dng)');
+  if(alert) alert.innerHTML=al.map(a=>`<div class="badge b-${a.t}" style="margin-bottom:3px">${a.m}</div>`).join('')||'<div class="badge b-ok">✓ Paramètres normaux</div>';
+}
+
+// ═══════════════════════════════════════
+// RÉCOLTES
+// ═══════════════════════════════════════
+function renderRecoltes(){
+  const tb=G('rec-tbody'); if(!tb)return;
+  const rec=state.bassins.filter(b=>b.statut==='Récolté');
+  tb.innerHTML='';
+  const pVente=fv('c-vente'),pProbio=fv('c-probio'),tarif=fv('c-elec'),watts=fv('c-watts'),heures=fv('c-heures');
+  let tBio=0,tRev=0,tCout=0,tM=0;
+  rec.forEach(b=>{
+    const c=calcBassin(b);
+    const pAlim=cump(c.ft);
+    const suiviB=state.suivi.filter(r=>r.bassin===b.name).sort((a,x)=>a.date.localeCompare(x.date));
+    const first=suiviB[0],last=suiviB[suiviB.length-1];
+    const duree=first&&last?(new Date(last.date)-new Date(first.date))/(86400000):0;
+    const survie=b.nbInit>0?((b.nbInit-b.mort)/b.nbInit*100):0;
+    const gmqMoy=duree>0&&first&&last?(last.poids-first.poids)/duree:0;
+    const alimTotal=c.alimTheo*1000*duree;
+    const gain=first&&last?last.poids-first.poids:0;
+    const fcr=gain>0?(alimTotal/gain):null;
+    const rev=c.biomasse*pVente,cAlim=c.alimTheo*duree*pAlim;
+    const cElec=(watts/1000)*heures*tarif*duree;
+    const cProbio=(c.alimTheo*duree*30+c.biomasse*100)/1000*pProbio;
+    const cTotal=cAlim+cProbio+cElec,marge=rev-cTotal;
+    tBio+=c.biomasse;tRev+=rev;tCout+=cTotal;tM+=marge;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="cn">${b.name}</td>
+      <td class="cf">${b.harvestDate||'—'}</td>
+      <td class="cf">${fmt(b.vol,1)}</td>
+      <td class="cf">${Math.round(duree)}</td>
+      <td class="cf">${b.nbInit}</td>
+      <td class="cf">${b.mort}</td>
+      <td class="cf" style="color:${survie>85?'var(--acc)':'var(--warn)'}">${fmt(survie,1)}%</td>
+      <td class="cf">${fmt(b.poids,1)}</td>
+      <td class="cf" style="color:var(--acc);font-weight:700">${fmt(c.biomasse,3)}</td>
+      <td class="cf">${fcr!==null?(fcr>1.5?`<span class="fcr-bad">${fmt(fcr,2)}</span>`:`<span class="fcr-ok">${fmt(fcr,2)}</span>`):'—'}</td>
+      <td class="cf">${fmt(gmqMoy,2)}</td>
+      <td class="cf">${xof(rev)}</td>
+      <td class="cf">${xof(cTotal)}</td>
+      <td style="font-weight:700;color:${marge>0?'var(--acc)':'var(--dng)'}">${xof(marge)}</td>`;
+    tb.appendChild(tr);
+  });
+  const m=G('rec-metrics'); if(!m)return;
+  m.innerHTML=`
+    <div class="met"><div class="mlbl">Bassins récoltés</div><div class="mval">${rec.length}</div></div>
+    <div class="met ok"><div class="mlbl">Biomasse récoltée totale</div><div class="mval" style="font-size:14px">${fmt(tBio,2)}<span class="munit">kg</span></div></div>
+    <div class="met"><div class="mlbl">Revenu total récoltes</div><div class="mval" style="font-size:13px">${xof(tRev)}</div></div>
+    <div class="met ${tM>0?'ok':'dng'}"><div class="mlbl">Marge cumulée récoltes</div><div class="mval" style="font-size:13px">${xof(tM)}</div></div>`;
+}
+
+// ═══════════════════════════════════════
+// FICHE COLLECTE — tableau seul
+// ═══════════════════════════════════════
+function renderFiche(){
+  const tb=G('fiche-tbody'); if(!tb)return;
+  tb.innerHTML='';
+  state.bassins.filter(b=>b.statut==='Actif').forEach(b=>{
+    const c=calcBassin(b);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td class="cn">${b.name}</td>
+      <td class="cf">${c.nbActuel}</td>
+      <td class="cf">${fmt(b.poids,1)}</td>
+      <td><span class="badge b-gold" style="font-size:9px">${c.ft.name}</span></td>
+      <td class="cf">${fmt(c.alimTheo,3)}</td>
+      <td style="background:rgba(0,201,167,.08)"><input class="ci" type="number" step="0.001" style="width:68px" placeholder="${fmt(c.alimTheo,3)}"></td>
+      <td style="background:rgba(61,142,245,.06)"><input class="ci" type="number" step="0.1" style="width:55px" placeholder="${fmt(b.temp,1)}"></td>
+      <td style="background:rgba(61,142,245,.06)"><input class="ci" type="number" step="0.01" style="width:52px" placeholder="${fmt(b.ph,2)}"></td>
+      <td style="background:rgba(61,142,245,.06)"><input class="ci" type="number" step="0.1" style="width:52px" placeholder="${fmt(b.DO,1)}"></td>
+      <td style="background:rgba(61,142,245,.06)"><input class="ci" type="number" step="0.01" style="width:55px" placeholder="${fmt(b.NH3,3)}"></td>
+      <td style="background:rgba(0,201,167,.04)"><input class="ci" type="number" style="width:50px" placeholder="0"></td>
+      <td><input class="ci" type="text" style="width:100px;font-family:var(--font)" placeholder="..."></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════
+// GLOBAL UPDATE
+// ═══════════════════════════════════════
+function upAll(){
+  upConfigCalcs();renderSuivi();
+  if(G('t2').classList.contains('active')) renderFeed();
+  if(G('t3').classList.contains('active')) renderChart();
+  if(G('t4').classList.contains('active')) upLog();
+  if(G('t5').classList.contains('active')) upCompta();
+  if(G('t6').classList.contains('active')) upCons();
+  if(G('t7').classList.contains('active')) renderRecoltes();
+  if(G('t8').classList.contains('active')) renderFiche();
+}
+
+// ═══════════════════════════════════════
+// MODAL DOCUMENTATION
+// ═══════════════════════════════════════
+function openDoc(){
+  G('doc-modal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeDoc(){
+  G('doc-modal').classList.remove('open');
+  document.body.style.overflow='';
+}
+function showDocSec(id,pill){
+  document.querySelectorAll('.doc-sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.doc-tab-pill').forEach(p=>p.classList.remove('active'));
+  G(id).classList.add('active');
+  pill.classList.add('active');
+}
+// Close modal on backdrop click
+G('doc-modal').addEventListener('click',function(e){if(e.target===this)closeDoc();});
+
+// ═══════════════════════════════════════
+// PAGE D'ACCÈS — Configuration
+// ═══════════════════════════════════════
+const FARM_NAME = 'FERME AQUACOLE';   // ← Modifier ici le nom de l'exploitation
+const USERS = [
+  {user:'admin',   pass:'biofloc2024', role:'Administrateur'},
+  {user:'operateur', pass:'biofloc',   role:'Opérateur'},
+];
+// Afficher le nom de la ferme
+G('ls-farm-name').textContent = FARM_NAME;
+
+// Horloge en temps réel
+function updateClock(){
+  const now=new Date();
+  const h=String(now.getHours()).padStart(2,'0');
+  const m=String(now.getMinutes()).padStart(2,'0');
+  const s=String(now.getSeconds()).padStart(2,'0');
+  const el=G('ls-clock'); if(el) el.textContent=`${h}:${m}:${s}`;
+  const dateEl=G('ls-date-str');
+  if(dateEl) dateEl.textContent=now.toLocaleDateString('fr-FR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+updateClock();
+setInterval(updateClock,1000);
+
+let currentRole = '';
+
+function doLogin(){
+  const u=(G('ls-user').value||'').trim().toLowerCase();
+  const p=(G('ls-pass').value||'').trim();
+  const match=USERS.find(x=>x.user===u&&x.pass===p);
+  const errEl=G('ls-err');
+  if(!u||!p){errEl.className='ls-err show';errEl.textContent='⚠️ Veuillez saisir vos identifiants';return;}
+  if(match){
+    errEl.className='ls-err';
+    currentRole = match.role;
+    const ls=G('login-screen');
+    ls.style.transition='opacity .4s';
+    ls.style.opacity='0';
+    setTimeout(()=>{
+      ls.classList.add('hidden');
+      applyRoleRestrictions();
+      G('sc-date').value=today();
+      G('cons-d').value=today();
+      buildBTable();
+      popSelects();
+      renderFeed();
+      upAll();
+      upLog();
+      upCompta();
+    },420);
+  } else {
+    errEl.className='ls-err show';
+    errEl.textContent='❌ Identifiant ou mot de passe incorrect';
+    G('ls-pass').value='';
+    G('ls-pass').focus();
+  }
+}
+
+function applyRoleRestrictions(){
+  const isAdmin = currentRole === 'Administrateur';
+  // Tab indices: t5=Comptabilité, t7=Récoltes
+  const restrictedTabs = ['t5','t7'];
+  document.querySelectorAll('.tb').forEach((btn,i)=>{
+    const tabId = ['t0','t1','t2','t3','t4','t5','t6','t7','t8'][i];
+    if(restrictedTabs.includes(tabId)){
+      if(!isAdmin){
+        btn.style.opacity='0.35';
+        btn.style.cursor='not-allowed';
+        btn.title='Accès réservé à l\'administrateur';
+        btn.onclick=()=>showAccessDenied(tabId);
+      }
+    }
+  });
+  // Show role badge in topbar
+  const badge=document.createElement('div');
+  badge.style.cssText='font-size:10px;padding:3px 10px;border-radius:12px;font-weight:700;margin-left:.5rem;'
+    +(isAdmin
+      ? 'background:rgba(167,139,250,.15);color:#a78bfa;border:1px solid rgba(167,139,250,.3)'
+      : 'background:rgba(0,201,167,.1);color:#00c9a7;border:1px solid rgba(0,201,167,.25)');
+  badge.textContent = (isAdmin ? '🔑 ' : '👤 ') + currentRole;
+  document.querySelector('.stats').prepend(badge);
+}
+
+function showAccessDenied(tabId){
+  // Temporarily show a denied message in the pane
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
+  let denied = G('access-denied-pane');
+  if(!denied){
+    denied = document.createElement('div');
+    denied.id='access-denied-pane';
+    denied.className='pane';
+    denied.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:1rem">
+      <div style="font-size:52px">🔒</div>
+      <div style="font-size:18px;font-weight:800;color:var(--dng);letter-spacing:1px">ACCÈS RESTREINT</div>
+      <div style="font-size:13px;color:var(--t2);text-align:center;max-width:380px;line-height:1.8">
+        Cet onglet est réservé à l'<strong style="color:var(--t1)">Administrateur</strong>.<br>
+        Connectez-vous avec un compte administrateur pour y accéder.
+      </div>
+      <button onclick="sw('t0')" style="background:var(--acc);color:#04101e;border:none;border-radius:8px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;margin-top:.5rem">← Retour à l'accueil</button>
+    </div>`;
+    document.querySelector('.main').appendChild(denied);
+  }
+  denied.classList.add('active');
+}
+// ═══════════════════════════════════════
+// INIT (déclenché après connexion)
+// ═══════════════════════════════════════
+</script>
+</body>
+</html>
