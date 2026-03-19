@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Biofloc Expert System V19</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <style>
 :root{
   --bg:#04101e;--panel:#091929;--card:#0e2236;--inp:#0a1f33;--hov:#122a42;
@@ -199,8 +202,8 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
     <div class="ls-clock" id="ls-clock">--:--:--</div>
     <div class="ls-date-str" id="ls-date-str">—</div>
     <div class="ls-sep"></div>
-    <div class="ls-lbl">Identifiant</div>
-    <input id="ls-user" class="ls-inp" type="text" placeholder="ex: admin" autocomplete="username" onkeydown="if(event.key==='Enter')G('ls-pass').focus()">
+    <div class="ls-lbl">Email</div>
+    <input id="ls-user" class="ls-inp" type="email" placeholder="ex: admin@biofloc.app" autocomplete="username" onkeydown="if(event.key==='Enter')G('ls-pass').focus()">
     <div class="ls-lbl">Mot de passe</div>
     <input id="ls-pass" class="ls-inp" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     <button class="ls-btn" onclick="doLogin()">ACCÉDER AU SYSTÈME →</button>
@@ -342,7 +345,7 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:.7rem">
     <div class="gi">
       <label>🧴 Stock Probio fût (ml)</label>
-      <input type="number" id="g-probio" value="100000" step="1000" oninput="upAll()">
+      <input type="number" id="g-probio" value="100000" step="1000" oninput="upAll();saveProbioStock()">
       <span style="font-size:9px;color:var(--t3)">/ 100 000 ml</span>
     </div>
     <button class="abtn" onclick="addBassin()">➕ Ajouter bassin</button>
@@ -753,13 +756,13 @@ function sw(id){
 function addBassin(){
   state.bassins.push({name:`Bassin ${String(bCount).padStart(2,'0')}`,vol:3.8,nbInit:1000,mort:0,poids:5,alimReel:0,temp:26,ph:7.8,DO:6.5,NH3:0.1,statut:'Actif',feedId:'G1',harvestDate:null});
   bCount++;
-  buildBTable(); popSelects(); upAll();
+  buildBTable(); popSelects(); upAll(); saveBassins();
 }
 function removeBassin(i){
   if(state.bassins.length<=1){alert('Minimum 1 bassin.');return;}
   if(!confirm(`Supprimer ${state.bassins[i].name} ?`))return;
   state.bassins.splice(i,1);
-  buildBTable(); popSelects(); upAll();
+  buildBTable(); popSelects(); upAll(); saveBassins();
 }
 function buildBTable(){
   const tb=G('b-tbody'); tb.innerHTML='';
@@ -874,25 +877,22 @@ function renderBatches(fi){
   });
 }
 function renderFeedCard(fi){
-  // Re-render just the CUMP and batches of one card
-  const ft=FEED_TYPES[fi],c=cump(ft),totQty=ft.batches.reduce((s,b)=>s+b.qty,0);
-  // Find cump-val in card
-  const cards=G('feed-grid').querySelectorAll('.feed-card');
-  if(cards[fi]){
+  const ft=FEED_TYPES[fi],c=cump(ft);
+  const cards=G('feed-grid')?.querySelectorAll('.feed-card');
+  if(cards&&cards[fi]){
     const cv=cards[fi].querySelector('.cump-val'); if(cv) cv.textContent=c>0?xof(c):'—';
     const bv=cards[fi].querySelector('.badge'); if(bv) bv.textContent=xof(c)+'/kg';
-    const info=cards[fi].querySelectorAll('div'); // stock info line
   }
-  renderBatches(fi); renderFeedMetrics();
+  renderBatches(fi); renderFeedMetrics(); saveFeed();
 }
 function addBatch(fi){
   const qty=parseFloat(G(`nqty-${fi}`)?.value)||0, price=parseFloat(G(`nprice-${fi}`)?.value)||0;
   if(!qty||!price){alert('Saisir quantité et prix.');return;}
   FEED_TYPES[fi].batches.push({id:batchId++,qty,price});
   G(`nqty-${fi}`).value=''; G(`nprice-${fi}`).value='';
-  renderFeed();
+  saveFeed(); renderFeed();
 }
-function removeBatch(fi,bi){FEED_TYPES[fi].batches.splice(bi,1);renderFeed();}
+function removeBatch(fi,bi){FEED_TYPES[fi].batches.splice(bi,1);saveFeed();renderFeed();}
 function renderFeedMetrics(){
   const m=G('feed-metrics'); if(!m)return;
   m.innerHTML=FEED_TYPES.map(ft=>{
@@ -916,13 +916,22 @@ function popSelects(){
 function addSuivi(){
   const date=G('sc-date').value,bassin=G('sc-bassin').value,poids=parseFloat(G('sc-poids').value),mort=parseInt(G('sc-mort').value)||0;
   if(!date||!bassin||isNaN(poids)){alert('Date, Bassin et Poids requis.');return;}
+  // Remove existing entry for same bassin+date (locally + Firestore)
+  const existing=state.suivi.find(r=>r.bassin===bassin&&r.date===date);
+  if(existing) deleteSuiviDoc(existing.id);
   state.suivi=state.suivi.filter(r=>!(r.bassin===bassin&&r.date===date));
-  state.suivi.push({id:state.suiviId++,date,bassin,poids,mort});
+  const newR={id:state.suiviId++,date,bassin,poids,mort};
+  state.suivi.push(newR);
   state.suivi.sort((a,b)=>a.date.localeCompare(b.date)||a.bassin.localeCompare(b.bassin));
   G('sc-poids').value='';G('sc-mort').value='';
+  saveSuiviDoc(newR);
   renderSuivi(); renderChart();
 }
-function removeSuivi(id){state.suivi=state.suivi.filter(r=>r.id!==id);renderSuivi();renderChart();}
+function removeSuivi(id){
+  state.suivi=state.suivi.filter(r=>r.id!==id);
+  deleteSuiviDoc(id);
+  renderSuivi();renderChart();
+}
 function renderSuivi(){
   const tb=G('sc-tbody'); if(!tb)return;
   const fl=G('sc-filter')?.value||'';
@@ -1201,6 +1210,7 @@ function renderFiche(){
 // ═══════════════════════════════════════
 function upAll(){
   upConfigCalcs();renderSuivi();
+  saveBassins();
   if(G('t2').classList.contains('active')) renderFeed();
   if(G('t3').classList.contains('active')) renderChart();
   if(G('t4').classList.contains('active')) upLog();
@@ -1234,14 +1244,194 @@ G('doc-modal').addEventListener('click',function(e){if(e.target===this)closeDoc(
 // PAGE D'ACCÈS — Configuration
 // ═══════════════════════════════════════
 const FARM_NAME = 'FERME AQUACOLE';   // ← Modifier ici le nom de l'exploitation
-const USERS = [
-  {user:'admin',   pass:'biofloc2024', role:'Administrateur'},
-  {user:'operateur', pass:'biofloc',   role:'Opérateur'},
-];
-// Afficher le nom de la ferme
+
+// Rôles par email Firebase Auth
+const ROLES = {
+  'admin@biofloc.app':     'Administrateur',
+  'operateur@biofloc.app': 'Opérateur',
+};
+
 G('ls-farm-name').textContent = FARM_NAME;
 
-// Horloge en temps réel
+// ═══════════════════════════════════════
+// FIREBASE INIT
+// ═══════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyASv7VsCjYIkbRygc3PXee3hVao8Zkuw6E",
+  authDomain: "biofloc-system-fc6f5.firebaseapp.com",
+  projectId: "biofloc-system-fc6f5",
+  storageBucket: "biofloc-system-fc6f5.firebasestorage.app",
+  messagingSenderId: "899565649316",
+  appId: "1:899565649316:web:1fc3205474122498649531"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// ── Debounce helper ──
+const _dbt={};
+function debounce(key,fn,ms=600){clearTimeout(_dbt[key]);_dbt[key]=setTimeout(fn,ms);}
+
+// ── Show/hide loading overlay ──
+function showLoader(msg='Chargement…'){
+  let el=G('fb-loader');
+  if(!el){
+    el=document.createElement('div');
+    el.id='fb-loader';
+    el.style.cssText='position:fixed;inset:0;background:rgba(4,16,30,.85);z-index:8888;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem';
+    el.innerHTML=`<div style="width:40px;height:40px;border:3px solid var(--b2);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite"></div><div id="fb-loader-msg" style="font-size:13px;color:var(--t2)"></div>`;
+    if(!document.querySelector('#spin-kf')){const s=document.createElement('style');s.id='spin-kf';s.textContent='@keyframes spin{to{transform:rotate(360deg)}}';document.head.appendChild(s);}
+    document.body.appendChild(el);
+  }
+  G('fb-loader-msg').textContent=msg;
+  el.style.display='flex';
+}
+function hideLoader(){const el=G('fb-loader');if(el)el.style.display='none';}
+
+// ── Sync indicator (dot in topbar) ──
+let syncDot=null;
+function showSyncing(){if(syncDot)syncDot.style.background='var(--warn)';}
+function showSynced(){if(syncDot)syncDot.style.background='var(--acc)';}
+function showSyncError(){if(syncDot)syncDot.style.background='var(--dng)';}
+
+// ═══════════════════════════════════════
+// FIRESTORE — SAUVEGARDE (avec debounce)
+// ═══════════════════════════════════════
+function saveBassins(){
+  debounce('bassins',()=>{
+    showSyncing();
+    const batch=db.batch();
+    state.bassins.forEach((b,i)=>{
+      const ref=db.collection('bassins').doc(String(i).padStart(3,'0'));
+      batch.set(ref,{...b,_order:i});
+    });
+    // Delete extra docs if bassins were removed
+    batch.commit().then(showSynced).catch(e=>{console.error(e);showSyncError();});
+  },600);
+}
+
+function saveSuiviDoc(r){
+  showSyncing();
+  db.collection('suivi').doc(String(r.id)).set(r)
+    .then(showSynced).catch(e=>{console.error(e);showSyncError();});
+}
+function deleteSuiviDoc(id){
+  showSyncing();
+  db.collection('suivi').doc(String(id)).delete()
+    .then(showSynced).catch(e=>{console.error(e);showSyncError();});
+}
+
+function saveFeed(){
+  debounce('feed',()=>{
+    showSyncing();
+    const batch=db.batch();
+    FEED_TYPES.forEach(ft=>{
+      batch.set(db.collection('feed').doc(ft.id),{batches:ft.batches});
+    });
+    batch.commit().then(showSynced).catch(e=>{console.error(e);showSyncError();});
+  },600);
+}
+
+function saveProbioStock(){
+  debounce('probio',()=>{
+    showSyncing();
+    db.collection('config').doc('app').set({probioStock:fv('g-probio')},{merge:true})
+      .then(showSynced).catch(e=>{console.error(e);showSyncError();});
+  },800);
+}
+
+// ═══════════════════════════════════════
+// FIRESTORE — CHARGEMENT INITIAL
+// ═══════════════════════════════════════
+async function loadFromFirestore(){
+  // 1) Config (probio stock)
+  const cfgSnap=await db.collection('config').doc('app').get();
+  if(cfgSnap.exists){
+    const d=cfgSnap.data();
+    if(d.probioStock!==undefined && G('g-probio')) G('g-probio').value=d.probioStock;
+  }
+
+  // 2) Bassins
+  const bSnap=await db.collection('bassins').orderBy('_order').get();
+  if(!bSnap.empty){
+    state.bassins=bSnap.docs.map(d=>{const x={...d.data()};delete x._order;return x;});
+    bCount=state.bassins.length+1;
+    // Ensure all bassins have feedId
+    state.bassins.forEach(b=>{if(!b.feedId)b.feedId='G1';});
+  }
+
+  // 3) Suivi
+  const sSnap=await db.collection('suivi').orderBy('date').get();
+  if(!sSnap.empty){
+    state.suivi=sSnap.docs.map(d=>({...d.data()}));
+    state.suiviId=Math.max(0,...state.suivi.map(r=>r.id||0))+1;
+  }
+
+  // 4) Feed types
+  const fSnap=await db.collection('feed').get();
+  if(!fSnap.empty){
+    fSnap.docs.forEach(d=>{
+      const ft=FEED_TYPES.find(f=>f.id===d.id);
+      if(ft&&d.data().batches) ft.batches=d.data().batches;
+    });
+  }
+}
+
+// ═══════════════════════════════════════
+// FIRESTORE — LISTENERS TEMPS RÉEL
+// ═══════════════════════════════════════
+let _unsubs=[];
+function setupRealtimeListeners(){
+  // Bassins
+  _unsubs.push(db.collection('bassins').orderBy('_order').onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return; // évite boucle locale
+    const newB=snap.docs.map(d=>{const x={...d.data()};delete x._order;return x;});
+    if(JSON.stringify(newB)===JSON.stringify(state.bassins)) return;
+    state.bassins=newB;
+    bCount=state.bassins.length+1;
+    buildBTable(); popSelects(); upAll();
+  }));
+
+  // Suivi
+  _unsubs.push(db.collection('suivi').orderBy('date').onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return;
+    const newS=snap.docs.map(d=>({...d.data()}));
+    if(JSON.stringify(newS)===JSON.stringify(state.suivi)) return;
+    state.suivi=newS;
+    state.suiviId=Math.max(0,...state.suivi.map(r=>r.id||0))+1;
+    renderSuivi(); renderChart();
+  }));
+
+  // Feed
+  _unsubs.push(db.collection('feed').onSnapshot(snap=>{
+    if(snap.metadata.hasPendingWrites) return;
+    snap.docs.forEach(d=>{
+      const ft=FEED_TYPES.find(f=>f.id===d.id);
+      if(ft&&d.data().batches){
+        const newB=d.data().batches;
+        if(JSON.stringify(newB)===JSON.stringify(ft.batches)) return;
+        ft.batches=newB;
+      }
+    });
+    if(G('t2').classList.contains('active')) renderFeed();
+  }));
+
+  // Config probio
+  _unsubs.push(db.collection('config').doc('app').onSnapshot(snap=>{
+    if(!snap.exists||snap.metadata.hasPendingWrites) return;
+    const d=snap.data();
+    if(d.probioStock!==undefined && G('g-probio')){
+      if(parseFloat(G('g-probio').value)!==d.probioStock){
+        G('g-probio').value=d.probioStock;
+        if(G('t4').classList.contains('active')) upLog();
+      }
+    }
+  }));
+}
+
+// ═══════════════════════════════════════
+// HORLOGE
+// ═══════════════════════════════════════
 function updateClock(){
   const now=new Date();
   const h=String(now.getHours()).padStart(2,'0');
@@ -1256,35 +1446,61 @@ setInterval(updateClock,1000);
 
 let currentRole = '';
 
-function doLogin(){
-  const u=(G('ls-user').value||'').trim().toLowerCase();
-  const p=(G('ls-pass').value||'').trim();
-  const match=USERS.find(x=>x.user===u&&x.pass===p);
+async function doLogin(){
+  const email=(G('ls-user').value||'').trim().toLowerCase();
+  const pass=(G('ls-pass').value||'').trim();
   const errEl=G('ls-err');
-  if(!u||!p){errEl.className='ls-err show';errEl.textContent='⚠️ Veuillez saisir vos identifiants';return;}
-  if(match){
+  if(!email||!pass){errEl.className='ls-err show';errEl.textContent='⚠️ Veuillez saisir vos identifiants';return;}
+
+  showLoader('Vérification des identifiants…');
+  try{
+    // Connexion via Firebase Authentication
+    const credential = await auth.signInWithEmailAndPassword(email, pass);
+    const userEmail = credential.user.email;
+
+    // Déterminer le rôle
+    currentRole = ROLES[userEmail] || 'Opérateur';
+
+    showLoader('Chargement des données…');
+    try{
+      await loadFromFirestore();
+      await new Promise(r=>setTimeout(r,300));
+    }catch(e){
+      console.error('Firestore load error:',e);
+    }
+    hideLoader();
     errEl.className='ls-err';
-    currentRole = match.role;
     const ls=G('login-screen');
-    ls.style.transition='opacity .4s';
-    ls.style.opacity='0';
+    ls.style.transition='opacity .4s';ls.style.opacity='0';
     setTimeout(()=>{
       ls.classList.add('hidden');
       applyRoleRestrictions();
+      syncDot=document.createElement('div');
+      syncDot.title='Synchronisation Firebase';
+      syncDot.style.cssText='width:8px;height:8px;border-radius:50%;background:var(--acc);flex-shrink:0;margin-left:.5rem;transition:background .3s';
+      document.querySelector('.stats').after(syncDot);
       G('sc-date').value=today();
       G('cons-d').value=today();
-      buildBTable();
-      popSelects();
-      renderFeed();
-      upAll();
-      upLog();
-      upCompta();
+      buildBTable(); popSelects(); renderFeed();
+      upAll(); upLog(); upCompta();
+      setupRealtimeListeners();
+      db.collection('bassins').limit(1).get().then(s=>{
+        if(s.empty){ saveBassins(); saveFeed(); }
+      });
     },420);
-  } else {
+  } catch(e){
+    hideLoader();
     errEl.className='ls-err show';
-    errEl.textContent='❌ Identifiant ou mot de passe incorrect';
-    G('ls-pass').value='';
-    G('ls-pass').focus();
+    if(e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential'){
+      errEl.textContent='❌ Email ou mot de passe incorrect';
+    } else if(e.code==='auth/too-many-requests'){
+      errEl.textContent='⚠️ Trop de tentatives — réessayez dans quelques minutes';
+    } else if(e.code==='auth/network-request-failed'){
+      errEl.textContent='⚠️ Pas de connexion internet — vérifiez votre réseau';
+    } else {
+      errEl.textContent='❌ Erreur de connexion : '+e.message;
+    }
+    G('ls-pass').value=''; G('ls-pass').focus();
   }
 }
 
