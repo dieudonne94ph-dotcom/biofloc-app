@@ -204,6 +204,22 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
     <button class="sbtn" style="width:100%" onclick="closeNotifModal()">✓ Pris en compte</button>
   </div>
 </div>
+<!-- Backup Reminder Popup -->
+<div id="backup-reminder-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:400px;text-align:center">
+    <div style="font-size:40px;margin-bottom:.5rem">💾</div>
+    <div class="modal-title">Rappel de sauvegarde</div>
+    <p style="font-size:12px;color:var(--t2);line-height:1.8;margin-bottom:1.1rem">
+      C'est votre <strong style="color:var(--t1)">première connexion de la journée</strong>.<br>
+      Vous avez les droits de sauvegarde. Pensez à effectuer une sauvegarde régulière pour protéger vos données.
+    </p>
+    <div style="display:flex;gap:.6rem">
+      <button class="sbtn" style="flex:1;background:var(--acc2)" onclick="triggerBackupFromReminder()">💾 Sauvegarder maintenant</button>
+      <button style="flex:1;background:none;border:1px solid var(--b2);border-radius:6px;color:var(--t2);font-size:11px;padding:.6rem;cursor:pointer" onclick="G('backup-reminder-modal').classList.add('hidden')">Plus tard</button>
+    </div>
+  </div>
+</div>
+
 <div id="screen-boot">
   <div class="boot-bg-circle bc1"></div>
   <div class="boot-bg-circle bc2"></div>
@@ -354,6 +370,18 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
             </div>
             <button class="sbtn" onclick="saveSettings()">Enregistrer</button>
           </div>
+          <div class="card">
+            <div class="ctitle"><span class="dot"></span>💾 Sauvegarde &amp; Restauration</div>
+            <p style="font-size:11px;color:var(--t2);line-height:1.8;margin-bottom:.75rem">
+              Téléchargez une copie complète de <strong style="color:var(--t1)">toutes les fermes</strong>. En cas de problème, utilisez le bouton Restaurer pour recharger un backup.
+            </p>
+            <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+              <button class="sbtn" style="flex:1;background:var(--acc2)" onclick="downloadBackupAdmin()">⬇️ Sauvegarder</button>
+              <button class="sbtn" style="flex:1;background:var(--purp)" onclick="G('restore-file-admin').click()">⬆️ Restaurer</button>
+            </div>
+            <input type="file" id="restore-file-admin" accept=".json" style="display:none" onchange="restoreBackupAdmin(this)">
+            <div id="backup-admin-msg" style="font-size:11px;margin-top:.4rem"></div>
+          </div>
         </div>
         <div>
           <div class="card">
@@ -393,6 +421,20 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
     <div class="form-group" style="margin-bottom:.6rem">
       <div class="form-lbl">Nom complet</div>
       <input id="eu-name" class="form-inp" placeholder="Nom complet">
+    </div>
+    <div class="form-group" style="margin-bottom:.6rem">
+      <div class="form-lbl">Niveau d'habilitation</div>
+      <select id="eu-role" class="form-inp si">
+        <option value="Opérateur">Opérateur</option>
+        <option value="Responsable">Responsable</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;padding:.6rem .75rem;background:rgba(61,142,245,.08);border:1px solid rgba(61,142,245,.2);border-radius:6px;margin-bottom:.6rem">
+      <input type="checkbox" id="eu-backup" style="width:16px;height:16px;cursor:pointer;accent-color:var(--acc2)">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--t1)">💾 Permission sauvegarde &amp; restauration</div>
+        <div style="font-size:10px;color:var(--t2)">Autorise cet utilisateur à sauvegarder et restaurer les données de sa ferme</div>
+      </div>
     </div>
     <div class="form-group" style="margin-bottom:.6rem">
       <div class="form-lbl">Nouveau mot de passe (laisser vide = inchangé)</div>
@@ -436,6 +478,7 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
     <button class="tb" onclick="sw('t6')">🔍 Consultation</button>
     <button class="tb" onclick="sw('t7')">🏆 Récoltes</button>
     <button class="tb" onclick="sw('t8')">🖨️ Fiche Collecte</button>
+    <button class="tb" onclick="sw('t9')" style="border-color:rgba(167,139,250,.4);color:var(--purp)" title="Module IoT — en préparation">📡 Capteurs IoT</button>
   </div>
   <div class="main">
 
@@ -688,6 +731,11 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
 
     <!-- T7 RÉCOLTES -->
     <div id="t7" class="pane">
+      <div id="farm-backup-bar" style="display:flex;justify-content:flex-end;gap:.5rem;margin-bottom:.7rem" class="no-print">
+        <button class="sbtn" style="background:var(--acc2);display:flex;align-items:center;gap:5px" onclick="downloadBackupFarm()">⬇️ Sauvegarder</button>
+        <button class="sbtn" style="background:var(--purp);display:flex;align-items:center;gap:5px" onclick="G('restore-file-farm').click()">⬆️ Restaurer</button>
+        <input type="file" id="restore-file-farm" accept=".json" style="display:none" onchange="restoreBackupFarm(this)">
+      </div>
       <div class="mgrid" id="rec-metrics"></div>
       <div class="tw"><table>
         <thead><tr><th>Bassin</th><th>Date récolte</th><th>Vol (m³)</th><th>Durée (j)</th><th>Nb Init</th><th>Mortalité</th><th>Survie %</th><th>Poids Final (g)</th><th>Biomasse (kg)</th><th>FCR</th><th>GMQ (g/j)</th><th>Revenu (XOF)</th><th>Coût (XOF)</th><th>Marge (XOF)</th></tr></thead>
@@ -710,6 +758,105 @@ input[type=date].di2::-webkit-calendar-picker-indicator{filter:invert(1) sepia(1
           <th>Mort. ✍️</th><th>Obs.</th>
         </tr></thead>
         <tbody id="fiche-tbody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- T9 CAPTEURS IoT -->
+    <div id="t9" class="pane">
+      <div class="card" style="border-color:rgba(167,139,250,.35)">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:.75rem">
+          <div style="font-size:28px">📡</div>
+          <div>
+            <div style="font-size:14px;font-weight:700;color:var(--purp)">Module IoT — En préparation</div>
+            <div style="font-size:11px;color:var(--t2)">Ce module sera actif dès la connexion des capteurs physiques à vos bassins</div>
+          </div>
+          <div style="margin-left:auto;padding:4px 12px;border-radius:20px;font-size:10px;font-weight:700;background:rgba(167,139,250,.12);color:var(--purp);border:1px solid rgba(167,139,250,.3)">PRÊT À CONNECTER</div>
+        </div>
+        <p style="font-size:11px;color:var(--t2);line-height:1.9;margin-bottom:.75rem">
+          L'infrastructure de données est déjà en place dans Firebase. Quand vos capteurs (ESP32, Arduino ou industriels) seront connectés, ils enverront automatiquement les mesures de <strong style="color:var(--t1)">Température</strong>, <strong style="color:var(--t1)">pH</strong>, <strong style="color:var(--t1)">Oxygène dissous (DO)</strong> et <strong style="color:var(--t1)">Ammoniaque (NH₃)</strong> directement dans cette plateforme — sans saisie manuelle.
+        </p>
+        <p style="font-size:11px;color:var(--t2);line-height:1.9">
+          En attendant, renseignez ci-dessous l'<strong style="color:var(--purp)">identifiant unique de chaque capteur</strong> par bassin. Ces IDs seront utilisés pour associer automatiquement les données des capteurs aux bons bassins lors de la mise en service IoT.
+        </p>
+      </div>
+
+      <!-- Config capteurs par bassin -->
+      <div class="card">
+        <div class="ctitle"><span class="dot" style="background:var(--purp)"></span>Configuration des capteurs par bassin</div>
+        <div class="tw">
+          <table>
+            <thead><tr>
+              <th>Bassin</th>
+              <th style="color:#a78bfa">ID Capteur Temp</th>
+              <th style="color:#a78bfa">ID Capteur pH</th>
+              <th style="color:#a78bfa">ID Capteur DO</th>
+              <th style="color:#a78bfa">ID Capteur NH₃</th>
+              <th>Fréquence (min)</th>
+              <th>Statut</th>
+              <th>Dernière lecture</th>
+            </tr></thead>
+            <tbody id="iot-tbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:.6rem;display:flex;gap:.5rem">
+          <button class="sbtn" style="background:var(--purp)" onclick="saveIoTConfig()">💾 Enregistrer configuration IoT</button>
+          <button class="sbtn" style="background:var(--acc2)" onclick="testIoTConnection()">🔌 Tester la connexion</button>
+        </div>
+        <div id="iot-msg" style="font-size:11px;margin-top:.5rem"></div>
+      </div>
+
+      <!-- Données temps réel (vide pour l'instant) -->
+      <div class="two">
+        <div class="card" style="border-color:rgba(167,139,250,.2)">
+          <div class="ctitle"><span class="dot" style="background:var(--purp)"></span>Données temps réel IoT</div>
+          <div id="iot-live-data">
+            <div style="text-align:center;padding:2rem;color:var(--t3);font-size:12px">
+              <div style="font-size:32px;margin-bottom:.5rem">📡</div>
+              En attente de connexion des capteurs…<br>
+              <span style="font-size:10px">Les mesures s'afficheront ici automatiquement</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="border-color:rgba(167,139,250,.2)">
+          <div class="ctitle"><span class="dot" style="background:var(--purp)"></span>Guide de connexion ESP32</div>
+          <div style="font-size:11px;color:var(--t2);line-height:1.9">
+            <div style="margin-bottom:.6rem"><strong style="color:var(--purp)">Étape 1</strong> — Câblez vos capteurs à l'ESP32 selon le schéma fourni par votre fabricant.</div>
+            <div style="margin-bottom:.6rem"><strong style="color:var(--purp)">Étape 2</strong> — Programmez l'ESP32 avec votre clé Firebase ci-dessous.</div>
+            <div style="margin-bottom:.6rem"><strong style="color:var(--purp)">Étape 3</strong> — Renseignez l'ID du capteur dans le tableau ci-contre.</div>
+            <div style="margin-bottom:.6rem"><strong style="color:var(--purp)">Étape 4</strong> — L'ESP32 envoie les mesures toutes les X minutes (configurable).</div>
+            <div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:6px;padding:.6rem;margin-top:.5rem">
+              <div style="font-size:9px;color:var(--purp);font-weight:700;margin-bottom:.3rem">CLÉS DE CONFIGURATION ESP32</div>
+              <div style="font-family:var(--mono);font-size:10px;color:var(--t2)">
+                Project ID: <strong style="color:var(--t1)">biofloc-system-fc6f5</strong><br>
+                Farm Code: <strong style="color:var(--t1)" id="iot-farm-code">—</strong><br>
+                Collection: <strong style="color:var(--t1)">farms/{farmCode}/sensors/{bassinName}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Structure Firestore prête -->
+      <div class="card" style="border-color:rgba(167,139,250,.2)">
+        <div class="ctitle"><span class="dot" style="background:var(--purp)"></span>Structure Firebase prête — format des données attendues</div>
+        <p style="font-size:11px;color:var(--t2);margin-bottom:.6rem">Voici le format JSON exact que votre ESP32 devra envoyer à Firebase. Cette structure est déjà créée et attend les données.</p>
+        <div style="background:var(--inp);border:1px solid var(--b2);border-radius:6px;padding:.75rem;font-family:var(--mono);font-size:10px;color:var(--t2);line-height:1.9">
+          <span style="color:var(--t3)">// Collection : farms/{farmCode}/sensors/{sensorId}</span><br>
+          {<br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"bassin"</span>: <span style="color:var(--gold)">"Bassin 01"</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"sensorId"</span>: <span style="color:var(--gold)">"esp32_bassin01"</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"timestamp"</span>: <span style="color:var(--gold)">"2025-01-15T08:30:00Z"</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"temp"</span>: <span style="color:var(--acc2)">26.4</span>, <span style="color:var(--t3)">// °C — DS18B20</span><br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"ph"</span>: <span style="color:var(--acc2)">7.82</span>, <span style="color:var(--t3)">// pH — Sonde Atlas EZO</span><br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"DO"</span>: <span style="color:var(--acc2)">6.51</span>, <span style="color:var(--t3)">// mg/L — Atlas Scientific DO</span><br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"NH3"</span>: <span style="color:var(--acc2)">0.12</span>, <span style="color:var(--t3)">// mg/L — Sonde ammoniac</span><br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"batterie"</span>: <span style="color:var(--acc2)">87</span>, <span style="color:var(--t3)">// % batterie capteur</span><br>
+          &nbsp;&nbsp;<span style="color:var(--acc)">"frequence_min"</span>: <span style="color:var(--acc2)">15</span> <span style="color:var(--t3)">// intervalle lecture (minutes)</span><br>
+          }
+        </div>
+        <div style="margin-top:.6rem;font-size:10px;color:var(--t3)">
+          Quand un capteur envoie des données, la plateforme mettra automatiquement à jour les valeurs du bassin correspondant en Config Bassins et déclenchera les alertes si nécessaire.
+        </div>
       </div>
     </div>
 
@@ -971,11 +1118,18 @@ async function doLogout(expired=false){
 // ═══════════════════════════════════════════════
 // SHOW FARM APP
 // ═══════════════════════════════════════════════
-function showFarmApp(){
+async function showFarmApp(){
   const farmNameEl=G('farm-display-name');
   if(farmNameEl)farmNameEl.textContent=APP.farmName||APP.farmCode;
-  const ub=G('user-badge');
-  if(ub){ub.textContent='👤 '+APP.user.name;ub.className='badge b-ok';}
+  // Load user profile to get canBackup
+  try{
+    const uSnap=await db.collection('users').doc(APP.user.uid).get();
+    if(uSnap.exists){
+      const ud=uSnap.data();
+      APP.user.canBackup=ud.canBackup||false;
+      APP.user.role=ud.role||APP.user.role||'Opérateur';
+    }
+  }catch(e){console.warn('User profile load:',e);}
   G('sc-date').value=today();G('cons-d').value=today();
   buildBTable();popSelects();renderFeed();
   upAll();upLog();upCompta();
@@ -983,36 +1137,42 @@ function showFarmApp(){
   applyRoleRestrictions();
   showScreen('screen-farm');
   startSession();
-  // Check notifications for Responsable/Admin
   const role=APP.user?.role||'Opérateur';
-  if(role==='Responsable'||role==='Administrateur'||role==='Admin'){
+  if(role==='Responsable'||role==='Administrateur'){
     checkNotifications();
   }
-  // Init date to today
   const cd=G('config-date');if(cd)cd.value=today();
+  // Check backup reminder (first login of the day)
+  checkBackupReminder();
 }
 
 function applyRoleRestrictions(){
   const role=APP.user?.role||'Opérateur';
+  const canBackup=APP.user?.canBackup||false;
   const isOp=role==='Opérateur';
-  // Opérateur: block Comptabilité (t5) and Récoltes (t7)
-  const restricted=['t5','t7'];
+  const hasBackupRight=role==='Responsable'||canBackup;
+  // Opérateur sans backup : bloquer Comptabilité + Récoltes
+  // Opérateur avec backup : bloquer Comptabilité, autoriser Récoltes (pour sauvegarder)
   document.querySelectorAll('#screen-farm .tb').forEach((btn,i)=>{
     const tabId=['t0','t1','t2','t3','t4','t5','t6','t7','t8'][i];
-    if(restricted.includes(tabId)&&isOp){
+    if(tabId==='t5'&&isOp){
       btn.style.opacity='0.35';btn.style.cursor='not-allowed';btn.title='Accès réservé au Responsable';
-      btn.onclick=(e)=>{e.stopPropagation();showAccessDeniedFarm();};
+      btn.onclick=(e)=>{e.stopPropagation();alert('🔒 Accès restreint\nCet onglet est réservé au niveau Responsable.');};
+    } else if(tabId==='t7'&&isOp&&!canBackup){
+      btn.style.opacity='0.35';btn.style.cursor='not-allowed';btn.title='Accès réservé au Responsable';
+      btn.onclick=(e)=>{e.stopPropagation();alert('🔒 Accès restreint\nCet onglet est réservé au niveau Responsable.');};
     }
   });
-  // User badge color by role
+  // Backup bar : visible si droits backup
+  const bar=G('farm-backup-bar');
+  if(bar)bar.style.display=hasBackupRight?'flex':'none';
+  // Badge utilisateur
   const ub=G('user-badge');
   if(ub){
-    ub.textContent=(isOp?'👤 ':'⭐ ')+APP.user.name+' — '+role;
+    const icon=role==='Responsable'?'⭐':canBackup?'💾':'👤';
+    ub.textContent=icon+' '+APP.user.name+' — '+role+(canBackup&&isOp?' (backup)':'');
     ub.className='badge '+(role==='Responsable'?'b-purp':'b-ok');
   }
-}
-function showAccessDeniedFarm(){
-  alert('🔒 Accès restreint\nCet onglet est réservé au niveau Responsable.');
 }
 
 // ═══════════════════════════════════════════════
@@ -1185,7 +1345,7 @@ function renderUsersTable(){
       <td><span class="badge b-gold" style="font-size:9px">${u.farmCode||'—'}</span></td>
       <td class="cf">${u.createdAt?new Date(u.createdAt.seconds*1000).toLocaleDateString('fr-FR'):'—'}</td>
       <td style="display:flex;gap:4px;justify-content:center">
-        <button class="ebtn" onclick='openEditUser(${JSON.stringify({uid:u.id,email:u.email,name:u.name,role:u.role})})'>Modifier</button>
+        <button class="ebtn" onclick='openEditUser(${JSON.stringify({uid:u.id,email:u.email,name:u.name,role:u.role,canBackup:u.canBackup||false})})'>Modifier</button>
         <button class="dbtn" onclick="deleteUser('${u.id}','${u.email||''}')">Supprimer</button>
       </td>
     </tr>`;
@@ -1260,28 +1420,33 @@ async function createOperator(){
 }
 
 function openEditUser(u){
-  G('eu-uid').value=u.uid;G('eu-email').value=u.email||'';G('eu-name').value=u.name||'';G('eu-pass').value='';G('eu-msg').textContent='';
-  G('edit-user-modal').classList.remove('hidden');setTimeout(()=>G('eu-name').focus(),100);
+  G('eu-uid').value=u.uid||'';
+  G('eu-email').value=u.email||'';
+  G('eu-name').value=u.name||'';
+  G('eu-pass').value='';
+  G('eu-msg').textContent='';
+  if(G('eu-role'))G('eu-role').value=u.role||'Opérateur';
+  if(G('eu-backup'))G('eu-backup').checked=!!(u.canBackup);
+  G('edit-user-modal').classList.remove('hidden');
+  setTimeout(()=>G('eu-name').focus(),100);
 }
 
 async function saveEditUser(){
   const uid=G('eu-uid').value,email=G('eu-email').value;
-  const name=G('eu-name').value.trim(),pass=G('eu-pass').value.trim();
+  const name=G('eu-name').value.trim();
+  const role=G('eu-role')?.value||'Opérateur';
+  const canBackup=G('eu-backup')?.checked||false;
+  const pass=G('eu-pass').value.trim();
   const msg=G('eu-msg');
   showLoader('Enregistrement…');
   try{
-    // Update name in Firestore
-    await db.collection('users').doc(uid).update({name});
-    // Update password if provided
+    await db.collection('users').doc(uid).update({name,role,canBackup});
     if(pass){
       if(pass.length<6){msg.style.color='var(--dng)';msg.textContent='⚠️ Mot de passe minimum 6 caractères';hideLoader();return;}
-      // Sign in as that user in secondary auth to change password
-      // We need to re-create approach: use admin SDK pattern via Firestore flag
-      // For now: store password change request in Firestore, user applies on next login
       await db.collection('passwordResets').doc(uid).set({newPass:pass,requestedAt:firebase.firestore.FieldValue.serverTimestamp()});
-      msg.style.color='var(--warn)';msg.textContent='⚠️ Nom mis à jour. Changement de mot de passe appliqué à la prochaine connexion.';
+      msg.style.color='var(--warn)';msg.textContent='⚠️ Profil mis à jour. Nouveau mot de passe appliqué à la prochaine connexion.';
     } else {
-      msg.style.color='var(--acc)';msg.textContent='✅ Nom mis à jour avec succès.';
+      msg.style.color='var(--acc)';msg.textContent='✅ Profil mis à jour avec succès.';
     }
     await loadAdminDashboard();
     setTimeout(()=>G('edit-user-modal').classList.add('hidden'),1500);
@@ -1360,9 +1525,10 @@ function sw(id){
   document.querySelectorAll('#screen-farm .pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('#screen-farm .tb').forEach(b=>b.classList.remove('active'));
   G(id).classList.add('active');
-  ['t0','t1','t2','t3','t4','t5','t6','t7','t8'].forEach((t,i)=>{if(t===id)document.querySelectorAll('#screen-farm .tb')[i].classList.add('active');});
+  ['t0','t1','t2','t3','t4','t5','t6','t7','t8','t9'].forEach((t,i)=>{if(t===id)document.querySelectorAll('#screen-farm .tb')[i].classList.add('active');});
   if(id==='t2')renderFeed();if(id==='t3')renderChart();if(id==='t4')upLog();
-  if(id==='t5')upCompta();if(id==='t6')upCons();if(id==='t7')renderRecoltes();if(id==='t8')renderFiche();
+  if(id==='t5')upCompta();if(id==='t6')upCons();if(id==='t7')renderRecoltes();
+  if(id==='t8')renderFiche();if(id==='t9')renderIoT();
 }
 
 // ═══════════════════════════════════════════════
@@ -1892,6 +2058,340 @@ function upAll(){
   if(G('t6')?.classList.contains('active'))upCons();
   if(G('t7')?.classList.contains('active'))renderRecoltes();
   if(G('t8')?.classList.contains('active'))renderFiche();
+}
+
+// ═══════════════════════════════════════════════
+// RAPPEL SAUVEGARDE — première connexion du jour
+// ═══════════════════════════════════════════════
+function checkBackupReminder(){
+  const role=APP.user?.role||'Opérateur';
+  const canBackup=APP.user?.canBackup||false;
+  const hasRight=role==='Responsable'||canBackup;
+  if(!hasRight)return;
+  const key=`lastBackupReminder_${APP.user?.uid}_${APP.farmCode}`;
+  const last=localStorage.getItem(key);
+  if(last!==today()){
+    localStorage.setItem(key,today());
+    setTimeout(()=>G('backup-reminder-modal').classList.remove('hidden'),1000);
+  }
+}
+function triggerBackupFromReminder(){
+  G('backup-reminder-modal').classList.add('hidden');
+  downloadBackupFarm();
+}
+
+// ═══════════════════════════════════════════════
+// SAUVEGARDE — ADMIN (toutes les fermes)
+// ═══════════════════════════════════════════════
+async function downloadBackupAdmin(){
+  const msg=G('backup-admin-msg');
+  if(msg){msg.style.color='var(--warn)';msg.textContent='⏳ Collecte des données en cours…';}
+  showLoader('Préparation de la sauvegarde complète…');
+  try{
+    const backup={
+      version:'1.0',date:new Date().toISOString(),
+      exportedBy:'admin@biofloc.app',farms:{},users:[],settings:{}
+    };
+    const farmsSnap=await db.collection('farms').get();
+    for(const farmDoc of farmsSnap.docs){
+      const code=farmDoc.id;
+      backup.farms[code]={info:farmDoc.data(),bassins:[],suivi:[],feed:[],daily:{}};
+      const [bS,sS,fS,dS]=await Promise.all([
+        db.collection('farms').doc(code).collection('bassins').get(),
+        db.collection('farms').doc(code).collection('suivi').get(),
+        db.collection('farms').doc(code).collection('feed').get(),
+        db.collection('farms').doc(code).collection('daily').get(),
+      ]);
+      backup.farms[code].bassins=bS.docs.map(d=>d.data());
+      backup.farms[code].suivi=sS.docs.map(d=>d.data());
+      backup.farms[code].feed=fS.docs.map(d=>({id:d.id,...d.data()}));
+      dS.docs.forEach(d=>{backup.farms[code].daily[d.id]=d.data();});
+    }
+    const uS=await db.collection('users').get();
+    backup.users=uS.docs.map(d=>({id:d.id,...d.data()}));
+    const settS=await db.collection('superadmin').doc('settings').get();
+    if(settS.exists)backup.settings=settS.data();
+    downloadJSON(backup,`biofloc_backup_complet_${today()}.json`);
+    if(msg){msg.style.color='var(--acc)';msg.textContent='✅ Sauvegarde téléchargée !';}
+  }catch(e){
+    if(msg){msg.style.color='var(--dng)';msg.textContent='❌ Erreur : '+e.message;}
+  }
+  hideLoader();
+}
+
+// ═══════════════════════════════════════════════
+// RESTAURATION — ADMIN
+// ═══════════════════════════════════════════════
+async function restoreBackupAdmin(input){
+  const file=input.files[0];if(!file)return;
+  if(!confirm('⚠️ La restauration remplacera toutes les données actuelles de toutes les fermes. Continuer ?'))return;
+  showLoader('Restauration en cours…');
+  try{
+    const text=await file.text();
+    const backup=JSON.parse(text);
+    const batch=db.batch();
+    // Restore farms data
+    for(const [code,data] of Object.entries(backup.farms||{})){
+      if(data.bassins){
+        data.bassins.forEach((b,i)=>{
+          batch.set(db.collection('farms').doc(code).collection('bassins').doc(String(i).padStart(3,'0')),{...b,_order:i});
+        });
+      }
+      if(data.suivi){
+        data.suivi.forEach(s=>{batch.set(db.collection('farms').doc(code).collection('suivi').doc(String(s.id)),s);});
+      }
+      if(data.feed){
+        data.feed.forEach(f=>{const{id,...rest}=f;batch.set(db.collection('farms').doc(code).collection('feed').doc(id),rest);});
+      }
+    }
+    await batch.commit();
+    const msg=G('backup-admin-msg');
+    if(msg){msg.style.color='var(--acc)';msg.textContent='✅ Restauration effectuée avec succès !';}
+    alert('✅ Restauration terminée ! Rechargez la page pour voir les données.');
+  }catch(e){
+    alert('❌ Erreur de restauration : '+e.message);
+  }
+  hideLoader();
+  input.value='';
+}
+
+// ═══════════════════════════════════════════════
+// SAUVEGARDE — FERME (Responsable / Opérateur autorisé)
+// Exporte uniquement les données de la ferme connectée
+// ═══════════════════════════════════════════════
+async function downloadBackupFarm(){
+  if(!APP.farmCode){alert('Ferme non identifiée.');return;}
+  showLoader('Préparation de la sauvegarde…');
+  try{
+    const backup={
+      version:'1.0',date:new Date().toISOString(),
+      exportedBy:APP.user?.name||'Utilisateur',
+      farmCode:APP.farmCode,farmName:APP.farmName||APP.farmCode,
+      bassins:[],suivi:[],feed:[],daily:{}
+    };
+    const col=(c)=>db.collection('farms').doc(APP.farmCode).collection(c);
+    const [bS,sS,fS,dS]=await Promise.all([
+      col('bassins').get(),col('suivi').get(),col('feed').get(),col('daily').get()
+    ]);
+    backup.bassins=bS.docs.map(d=>d.data());
+    backup.suivi=sS.docs.map(d=>d.data());
+    backup.feed=fS.docs.map(d=>({id:d.id,...d.data()}));
+    dS.docs.forEach(d=>{backup.daily[d.id]=d.data();});
+    downloadJSON(backup,`biofloc_${APP.farmCode}_${today()}.json`);
+  }catch(e){alert('❌ Erreur : '+e.message);}
+  hideLoader();
+}
+
+// ═══════════════════════════════════════════════
+// RESTAURATION — FERME
+// ═══════════════════════════════════════════════
+async function restoreBackupFarm(input){
+  const file=input.files[0];if(!file)return;
+  if(!confirm(`⚠️ La restauration remplacera toutes les données actuelles de la ferme ${APP.farmCode}. Continuer ?`))return;
+  showLoader('Restauration en cours…');
+  try{
+    const text=await file.text();
+    const backup=JSON.parse(text);
+    // Vérifier que le backup correspond à cette ferme
+    if(backup.farmCode&&backup.farmCode!==APP.farmCode){
+      alert(`❌ Ce fichier appartient à la ferme "${backup.farmCode}", pas à "${APP.farmCode}".`);
+      hideLoader();input.value='';return;
+    }
+    const col=(c)=>db.collection('farms').doc(APP.farmCode).collection(c);
+    const batch=db.batch();
+    (backup.bassins||[]).forEach((b,i)=>{
+      batch.set(col('bassins').doc(String(i).padStart(3,'0')),{...b,_order:i});
+    });
+    (backup.suivi||[]).forEach(s=>{
+      batch.set(col('suivi').doc(String(s.id)),s);
+    });
+    (backup.feed||[]).forEach(f=>{
+      const{id,...rest}=f;
+      batch.set(col('feed').doc(id||f.id||'G1'),rest);
+    });
+    await batch.commit();
+    alert('✅ Restauration terminée ! Rechargez la page pour voir les données mises à jour.');
+  }catch(e){alert('❌ Erreur de restauration : '+e.message);}
+  hideLoader();input.value='';
+}
+
+// ═══════════════════════════════════════════════
+// HELPER — Téléchargement JSON
+// ═══════════════════════════════════════════════
+function downloadJSON(data,filename){
+  const json=JSON.stringify(data,null,2);
+  const blob=new Blob([json],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════
+// MODULE IoT — CAPTEURS
+// ═══════════════════════════════════════════════
+
+// Structure de données IoT dans Firestore :
+// farms/{farmCode}/sensors/{sensorId} → lectures temps réel
+// farms/{farmCode}/iotConfig → configuration des capteurs par bassin
+// farms/{farmCode}/sensorHistory/{date}/{bassinName} → historique IoT
+
+let APP_iotConfig = {}; // {bassinName: {tempId, phId, doId, nh3Id, freq}}
+let APP_iotUnsub = null; // listener temps réel
+
+function renderIoT(){
+  // Afficher code ferme
+  const fc=G('iot-farm-code');if(fc)fc.textContent=APP.farmCode||'—';
+  // Charger config IoT depuis Firestore
+  if(!APP.farmCode)return;
+  farmCol('iotConfig').doc('sensors').get().then(snap=>{
+    if(snap.exists)APP_iotConfig=snap.data()||{};
+    buildIoTTable();
+    setupIoTListener();
+  }).catch(()=>buildIoTTable());
+}
+
+function buildIoTTable(){
+  const tb=G('iot-tbody');if(!tb)return;tb.innerHTML='';
+  APP.state.bassins.forEach(b=>{
+    const cfg=APP_iotConfig[b.name]||{tempId:'',phId:'',doId:'',nh3Id:'',freq:15};
+    const last=APP_iotConfig[b.name]?.lastReading||null;
+    const lastStr=last?new Date(last).toLocaleString('fr-FR'):'Jamais';
+    const isConnected=!!(cfg.tempId||cfg.phId||cfg.doId||cfg.nh3Id);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="cn">${b.name}</td>
+      <td><input class="ci" style="width:110px;border-color:rgba(167,139,250,.35);color:var(--purp)" type="text"
+        id="iot-temp-${b.name}" value="${cfg.tempId||''}" placeholder="ex: esp32_b01_t"></td>
+      <td><input class="ci" style="width:110px;border-color:rgba(167,139,250,.35);color:var(--purp)" type="text"
+        id="iot-ph-${b.name}" value="${cfg.phId||''}" placeholder="ex: esp32_b01_p"></td>
+      <td><input class="ci" style="width:110px;border-color:rgba(167,139,250,.35);color:var(--purp)" type="text"
+        id="iot-do-${b.name}" value="${cfg.doId||''}" placeholder="ex: esp32_b01_d"></td>
+      <td><input class="ci" style="width:110px;border-color:rgba(167,139,250,.35);color:var(--purp)" type="text"
+        id="iot-nh3-${b.name}" value="${cfg.nh3Id||''}" placeholder="ex: esp32_b01_n"></td>
+      <td><input class="ci" style="width:55px" type="number" min="1" max="60"
+        id="iot-freq-${b.name}" value="${cfg.freq||15}" placeholder="15"></td>
+      <td><span class="badge ${isConnected?'b-purp':'b-warn'}">${isConnected?'⚙️ Configuré':'⏳ En attente'}</span></td>
+      <td style="font-size:10px;color:var(--t3)">${lastStr}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+async function saveIoTConfig(){
+  const msg=G('iot-msg');
+  if(msg){msg.style.color='var(--warn)';msg.textContent='⏳ Enregistrement…';}
+  try{
+    const config={};
+    APP.state.bassins.forEach(b=>{
+      config[b.name]={
+        tempId:G(`iot-temp-${b.name}`)?.value.trim()||'',
+        phId:G(`iot-ph-${b.name}`)?.value.trim()||'',
+        doId:G(`iot-do-${b.name}`)?.value.trim()||'',
+        nh3Id:G(`iot-nh3-${b.name}`)?.value.trim()||'',
+        freq:parseInt(G(`iot-freq-${b.name}`)?.value)||15,
+        bassinVol:b.vol,
+        updatedAt:new Date().toISOString()
+      };
+    });
+    APP_iotConfig=config;
+    await farmCol('iotConfig').doc('sensors').set(config);
+    if(msg){msg.style.color='var(--acc)';msg.textContent='✅ Configuration IoT enregistrée ! Les capteurs peuvent maintenant envoyer leurs données.';}
+    buildIoTTable();
+  }catch(e){
+    if(msg){msg.style.color='var(--dng)';msg.textContent='❌ Erreur : '+e.message;}
+  }
+}
+
+function testIoTConnection(){
+  const msg=G('iot-msg');
+  // Vérifie si des données sensors existent déjà dans Firestore
+  farmCol('sensors').limit(1).get().then(snap=>{
+    if(!snap.empty){
+      if(msg){msg.style.color='var(--acc)';msg.textContent='✅ Connexion Firebase OK — des données capteurs sont déjà présentes !';}
+    } else {
+      if(msg){msg.style.color='var(--warn)';msg.textContent='⚠️ Firebase OK — en attente de données capteurs. Vérifiez que vos capteurs sont allumés et configurés.';}
+    }
+  }).catch(e=>{
+    if(msg){msg.style.color='var(--dng)';msg.textContent='❌ Erreur de connexion : '+e.message;}
+  });
+}
+
+function setupIoTListener(){
+  // Listener temps réel sur la collection sensors
+  if(APP_iotUnsub)APP_iotUnsub();
+  APP_iotUnsub=farmCol('sensors').onSnapshot(snap=>{
+    if(snap.empty)return;
+    const readings={};
+    snap.docs.forEach(d=>readings[d.id]={...d.data()});
+    updateIoTLiveDisplay(readings);
+    // Injecter automatiquement dans l'état des bassins
+    injectIoTDataIntoBassins(readings);
+  });
+  APP.unsubs.push(()=>{if(APP_iotUnsub)APP_iotUnsub();});
+}
+
+function updateIoTLiveDisplay(readings){
+  const div=G('iot-live-data');if(!div)return;
+  const keys=Object.keys(readings);
+  if(!keys.length){
+    div.innerHTML='<div style="text-align:center;padding:2rem;color:var(--t3);font-size:12px"><div style="font-size:32px;margin-bottom:.5rem">📡</div>En attente de connexion des capteurs…</div>';
+    return;
+  }
+  div.innerHTML=`<div class="mgrid">${keys.map(id=>{
+    const r=readings[id];
+    const ts=r.timestamp?new Date(r.timestamp).toLocaleTimeString('fr-FR'):'—';
+    return `<div class="met" style="border-color:rgba(167,139,250,.25)">
+      <div class="mlbl" style="color:var(--purp)">${r.bassin||id}</div>
+      <div style="font-size:10px;color:var(--t3);margin-bottom:.3rem">⏱ ${ts}</div>
+      ${r.temp!=null?`<div style="font-size:11px;color:var(--acc)">🌡 ${r.temp}°C</div>`:''}
+      ${r.ph!=null?`<div style="font-size:11px;color:var(--acc2)">⚗️ pH ${r.ph}</div>`:''}
+      ${r.DO!=null?`<div style="font-size:11px;color:${r.DO<4?'var(--dng)':'var(--acc)'}">💧 DO ${r.DO} mg/L</div>`:''}
+      ${r.NH3!=null?`<div style="font-size:11px;color:${r.NH3>0.5?'var(--dng)':'var(--acc)'}">☠️ NH₃ ${r.NH3} mg/L</div>`:''}
+      ${r.batterie!=null?`<div style="font-size:10px;color:var(--t3)">🔋 ${r.batterie}%</div>`:''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function injectIoTDataIntoBassins(readings){
+  // Quand un capteur envoie des données, mettre à jour automatiquement
+  // le bassin correspondant dans l'état (remplace la saisie manuelle)
+  let changed=false;
+  Object.values(readings).forEach(r=>{
+    if(!r.bassin)return;
+    const b=APP.state.bassins.find(x=>x.name===r.bassin);
+    if(!b)return;
+    if(r.temp!=null&&b.temp!==r.temp){b.temp=r.temp;changed=true;}
+    if(r.ph!=null&&b.ph!==r.ph){b.ph=r.ph;changed=true;}
+    if(r.DO!=null&&b.DO!==r.DO){b.DO=r.DO;changed=true;}
+    if(r.NH3!=null&&b.NH3!==r.NH3){b.NH3=r.NH3;changed=true;}
+    // Sauvegarder l'historique IoT
+    const dateStr=today();
+    farmCol('sensorHistory').doc(dateStr).set({
+      [r.bassin]:{...r,receivedAt:new Date().toISOString()}
+    },{merge:true});
+  });
+  if(changed){
+    // Mettre à jour l'affichage Config Bassins si ouvert
+    if(G('t1')?.classList.contains('active'))buildBTable();
+    upConfigCalcs();
+    // Déclencher alertes automatiques
+    checkIoTAlerts();
+  }
+}
+
+function checkIoTAlerts(){
+  // Vérifier les seuils critiques sur les données IoT reçues
+  APP.state.bassins.forEach(b=>{
+    if(b.DO!==null&&b.DO<4){
+      console.warn(`🚨 ALERTE IoT — ${b.name} : DO critique = ${b.DO} mg/L`);
+      // Future évolution : envoyer notification push, email, WhatsApp
+    }
+    if(b.NH3!==null&&b.NH3>0.5){
+      console.warn(`🚨 ALERTE IoT — ${b.name} : NH₃ élevé = ${b.NH3} mg/L`);
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════
