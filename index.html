@@ -10,9 +10,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <style>
 :root{
-  --bg:#04101e;--panel:#091929;--card:#0e2236;--inp:#0a1f33;--hov:#122a42;
-  --acc:#00c9a7;--acc2:#3d8ef5;--warn:#f5a623;--dng:#ff3d57;--purp:#a78bfa;--gold:#fbbf24;
-  --t1:#d8eaff;--t2:#6a90b8;--t3:#3d6080;--b1:#1a3550;--b2:#1e4060;
+  --bg:#020b14;--panel:#04111f;--card:#061828;--inp:#05131f;--hov:#0a1e2e;
+  --acc:#00d4b4;--acc2:#00aaff;--warn:#ffb347;--dng:#ff4d6d;--purp:#9b8fff;--gold:#ffd670;
+  --t1:#c8eeff;--t2:#5a9fc0;--t3:#2d5f7a;--b1:#0d2a3d;--b2:#10304a;
   --font:'Segoe UI',system-ui,sans-serif;--mono:'Courier New',monospace;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -4538,41 +4538,41 @@ async function deleteSupplier(){
 // SYSTÈME DE THÈMES
 // ═══════════════════════════════════════════════
 const THEMES={
-  dark:{
-    id:'dark', nom:'Nuit', icon:'🌑', desc:'Fond sombre — idéal en intérieur ou en faible luminosité',
+  abysse:{
+    id:'abysse', nom:'Abysses', icon:'🦑', desc:'Bleu nuit océanique — profondeurs marines',
     vars:{
-      '--bg':'#04101e','--panel':'#091929','--card':'#0e2236','--inp':'#0a1f33','--hov':'#122a42',
-      '--t1':'#d8eaff','--t2':'#6a90b8','--t3':'#3d6080','--b1':'#1a3550','--b2':'#1e4060',
-      '--acc':'#00c9a7','--acc2':'#3d8ef5','--warn':'#f5a623','--dng':'#ff3d57','--purp':'#a78bfa','--gold':'#fbbf24'
+      '--bg':'#020b14','--panel':'#04111f','--card':'#061828','--inp':'#05131f','--hov':'#0a1e2e',
+      '--t1':'#c8eeff','--t2':'#5a9fc0','--t3':'#2d5f7a','--b1':'#0d2a3d','--b2':'#10304a',
+      '--acc':'#00d4b4','--acc2':'#00aaff','--warn':'#ffb347','--dng':'#ff4d6d','--purp':'#9b8fff','--gold':'#ffd670'
     }
   },
-  light:{
-    id:'light', nom:'Jour', icon:'☀️', desc:'Fond clair — idéal en extérieur ou forte luminosité',
+  lagon:{
+    id:'lagon', nom:'Lagon', icon:'🪸', desc:'Turquoise tropical — eaux peu profondes',
     vars:{
-      '--bg':'#f0f4f8','--panel':'#ffffff','--card':'#ffffff','--inp':'#f8fafc','--hov':'#e8f0fe',
-      '--t1':'#1a2744','--t2':'#4a6080','--t3':'#8a9ab8','--b1':'#d0dcea','--b2':'#c0cedc',
-      '--acc':'#008f73','--acc2':'#2563eb','--warn':'#d97706','--dng':'#dc2626','--purp':'#7c3aed','--gold':'#b45309'
+      '--bg':'#f0fcfa','--panel':'#ffffff','--card':'#ffffff','--inp':'#eef9f7','--hov':'#e0f5f2',
+      '--t1':'#0a3040','--t2':'#1a6070','--t3':'#5a9aaa','--b1':'#b0dde5','--b2':'#90cdd8',
+      '--acc':'#008c7a','--acc2':'#0077b6','--warn':'#e07b00','--dng':'#c1121f','--purp':'#6a4fc8','--gold':'#9a6800'
     }
   },
-  ocean:{
-    id:'ocean', nom:'Océan', icon:'🌊', desc:'Tons bleu-vert profond — ambiance aquacole',
+  corail:{
+    id:'corail', nom:'Récif', icon:'🐠', desc:'Couleurs chaudes du récif corallien',
     vars:{
-      '--bg':'#020f1a','--panel':'#051824','--card':'#072030','--inp':'#041520','--hov':'#0a2538',
-      '--t1':'#b8f0e8','--t2':'#5ba8a0','--t3':'#2d6060','--b1':'#0d3040','--b2':'#0f3850',
-      '--acc':'#00e5c0','--acc2':'#00b4d8','--warn':'#ffd166','--dng':'#ff6b6b','--purp':'#c77dff','--gold':'#ffd700'
+      '--bg':'#0d0a14','--panel':'#130f1e','--card':'#1a1428','--inp':'#110d1c','--hov':'#1f1830',
+      '--t1':'#ffd8c0','--t2':'#c08070','--t3':'#7a4a3a','--b1':'#2a1a28','--b2':'#301e30',
+      '--acc':'#ff7e5f','--acc2':'#ff9f43','--warn':'#ffd166','--dng':'#ff2d6f','--purp':'#d4a5f5','--gold':'#ffca3a'
     }
   },
-  forest:{
-    id:'forest', nom:'Forêt', icon:'🌿', desc:'Tons verts naturels — reposant pour les longues sessions',
+  bioluminescence:{
+    id:'bioluminescence', nom:'Bioluminescence', icon:'✨', desc:'Lueur des créatures des profondeurs',
     vars:{
-      '--bg':'#0a1a0f','--panel':'#0f2414','--card':'#132d18','--inp':'#0d2012','--hov':'#182f1d',
-      '--t1':'#d4f0d0','--t2':'#6a9e70','--t3':'#3d6040','--b1':'#1e4025','--b2':'#244a2c',
-      '--acc':'#4caf76','--acc2':'#2e86ab','--warn':'#f4a261','--dng':'#e76f51','--purp':'#a8dadc','--gold':'#e9c46a'
+      '--bg':'#010810','--panel':'#030e18','--card':'#041420','--inp':'#031018','--hov':'#071a28',
+      '--t1':'#b8fff5','--t2':'#40c0b0','--t3':'#1a7060','--b1':'#082028','--b2':'#0a2830',
+      '--acc':'#00ffcc','--acc2':'#00d4ff','--warn':'#ffee00','--dng':'#ff3366','--purp':'#cc88ff','--gold':'#aaff00'
     }
   }
 };
 
-let CURRENT_THEME='dark';
+let CURRENT_THEME='abysse';
 
 function applyTheme(id){
   const t=THEMES[id];if(!t)return;
@@ -4595,9 +4595,10 @@ function applyTheme(id){
 
 function loadSavedTheme(){
   try{
-    const saved=localStorage.getItem('biofloc_theme')||'dark';
+    const saved=localStorage.getItem('biofloc_theme')||'abysse';
     if(THEMES[saved])applyTheme(saved);
-  }catch(e){applyTheme('dark');}
+    else applyTheme('abysse');
+  }catch(e){applyTheme('abysse');}
 }
 
 function openThemeModal(){
